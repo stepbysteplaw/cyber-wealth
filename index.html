@@ -44,6 +44,15 @@
 </head>
 <body class="text-slate-300 min-h-screen flex flex-col p-4 md:p-8">
 
+    <datalist id="pay-methods">
+        <option value="現金"></option>
+        <option value="八達通"></option>
+        <option value="信用卡"></option>
+        <option value="PayMe"></option>
+        <option value="AlipayHK"></option>
+        <option value="銀行轉帳"></option>
+    </datalist>
+
     <div id="crypto-lock-screen" class="fixed inset-0 bg-cyberDark z-50 flex flex-col items-center justify-center p-4 transition-opacity duration-500">
         <div class="max-w-md w-full bg-slate-900 border border-slate-800 p-8 rounded-2xl text-center shadow-2xl relative overflow-hidden">
             <div class="w-16 h-16 rounded-full bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 text-2xl mx-auto mb-4 animate-bounce">
@@ -56,7 +65,6 @@
                 <input type="password" id="master-password-input" placeholder="輸入解密密碼" 
                        autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false"
                        class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 pr-12 text-center text-white text-lg tracking-widest focus:outline-none focus:border-cyan-400 transition">
-                
                 <button type="button" onclick="togglePasswordVisibility()" class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-cyan-400 focus:outline-none transition">
                     <i class="fa-solid fa-eye" id="toggle-pwd-icon"></i>
                 </button>
@@ -69,7 +77,6 @@
             <button onclick="resetToDemoData()" class="mt-4 w-full py-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 rounded-xl text-xs transition duration-200">
                 <i class="fa-solid fa-triangle-exclamation mr-1"></i> 忘記密碼或卡住？點此強制清空重置
             </button>
-
             <div class="mt-4 text-[10px] text-slate-600">🛡️ 金融級前端加密：所有資產數據皆儲存於本地瀏覽器沙盒，不經任何伺服器。</div>
         </div>
     </div>
@@ -142,7 +149,7 @@
                                 <th class="py-2 font-semibold">帳戶名稱</th>
                                 <th class="py-2 font-semibold">類型</th>
                                 <th class="py-2 font-semibold">幣別</th>
-                                <th class="py-2 font-semibold text-right">金額 (負債請輸入負數)</th>
+                                <th class="py-2 font-semibold text-right">金額 (HK/US $)</th>
                                 <th class="py-2 font-semibold text-center">操作</th>
                             </tr>
                         </thead>
@@ -166,13 +173,13 @@
                     <h2 class="text-base font-bold text-white"><i class="fa-solid fa-wallet text-neonPurple mr-2"></i>當月預算與花費分析</h2>
                     <div class="text-xs text-slate-400 flex items-center">
                         每月預算：
-                        <input type="number" id="monthly-budget-input" onchange="updateBudgetSetting(this.value)" class="ml-1 w-20 bg-slate-950 border border-slate-700 rounded px-1.5 py-0.5 text-right font-bold text-white focus:outline-none focus:border-neonPurple">
+                        <input type="text" inputmode="decimal" id="monthly-budget-input" onchange="updateBudgetSetting(this.value)" class="ml-1 w-24 bg-slate-950 border border-slate-700 rounded px-1.5 py-0.5 text-right font-bold text-white focus:outline-none focus:border-neonPurple">
                     </div>
                 </div>
                 
                 <div class="mb-5 bg-slate-950/50 p-4 rounded-xl border border-slate-800">
                     <div class="flex justify-between text-xs mb-2">
-                        <span class="text-slate-400" id="budget-month-label">本月已花費</span>
+                        <span class="text-slate-400" id="budget-month-label">本月已花費 (僅計算支出)</span>
                         <span class="font-bold text-white" id="budget-spent-text">HK$ 0 / HK$ 0</span>
                     </div>
                     <div class="w-full h-2.5 bg-slate-800 rounded-full overflow-hidden mb-2">
@@ -212,7 +219,7 @@
         <section class="bg-slate-900/80 p-6 rounded-2xl border border-slate-800 w-full">
             <div class="flex justify-between items-center mb-4">
                 <h2 class="text-base font-bold text-white tracking-wide">
-                    <i class="fa-solid fa-receipt text-neonOrange mr-2"></i>日常現金流記帳 (Inline Edit)
+                    <i class="fa-solid fa-receipt text-neonOrange mr-2"></i>現金流記帳 (支援跨帳戶轉帳)
                 </h2>
                 <button onclick="addNewExpenseRow()" class="px-2 py-1 bg-neonOrange/10 hover:bg-neonOrange/20 text-neonOrange border border-neonOrange/20 rounded text-xs transition">
                     <i class="fa-solid fa-plus mr-1"></i> 記一筆
@@ -220,13 +227,15 @@
             </div>
             <div class="overflow-x-auto max-h-80 overflow-y-auto pr-2">
                 <table class="w-full text-left text-xs border-collapse">
-                    <thead class="sticky top-0 bg-slate-900">
+                    <thead class="sticky top-0 bg-slate-900 z-10 shadow-sm">
                         <tr class="border-b border-slate-800 text-slate-500">
-                            <th class="py-2 font-semibold w-28">日期</th>
-                            <th class="py-2 font-semibold w-24">分類</th>
-                            <th class="py-2 font-semibold">消費內容 / 備註</th>
-                            <th class="py-2 font-semibold text-right w-32">金額 (HK$)</th>
-                            <th class="py-2 font-semibold text-center w-16">操作</th>
+                            <th class="py-2 font-semibold w-[100px]">日期</th>
+                            <th class="py-2 font-semibold w-[80px]">收支</th>
+                            <th class="py-2 font-semibold w-[90px]">分類</th>
+                            <th class="py-2 font-semibold w-[120px]">支付方式/帳戶</th>
+                            <th class="py-2 font-semibold">內容/備註</th>
+                            <th class="py-2 font-semibold text-right w-[110px]">金額 (HK$)</th>
+                            <th class="py-2 font-semibold text-center w-[50px]">操作</th>
                         </tr>
                     </thead>
                     <tbody id="expenses-table-body" class="divide-y divide-slate-800/40"></tbody>
@@ -237,7 +246,6 @@
     </main>
 
     <script>
-        // === 全局變數與預設資料 ===
         let accounts = [];
         let stocks = [];
         let expenses = [];
@@ -254,9 +262,9 @@
             { id: 1, institution: 'FUTU', code: '0700.HK', shares: 1000, cost: 320, current: 382.4 }
         ];
         const defaultDemoExpenses = [
-            { id: 1, date: new Date().toISOString().split('T')[0], category: 'FOOD', desc: '午餐與咖啡', amount: 120 },
-            { id: 2, date: new Date().toISOString().split('T')[0], category: 'TRANSPORT', desc: '地鐵儲值', amount: 100 },
-            { id: 3, date: new Date().toISOString().split('T')[0], category: 'SHOPPING', desc: '生活日用品', amount: 450 }
+            { id: 1, date: new Date().toISOString().split('T')[0], flowType: 'OUT', category: 'FOOD', paymentMethod: '現金', desc: '午餐與咖啡', amount: 120 },
+            { id: 2, date: new Date().toISOString().split('T')[0], flowType: 'OUT', category: 'TRANSPORT', paymentMethod: '八達通', desc: '地鐵儲值', amount: 100 },
+            { id: 3, date: new Date().toISOString().split('T')[0], flowType: 'TRANSFER', category: 'OTHER', paymentMethod: '匯豐 -> 渣打', desc: '每月儲蓄轉帳', amount: 5000 }
         ];
 
         const categoryMap = {
@@ -265,104 +273,333 @@
             'SHOPPING': { label: '購物', color: 'bg-purple-400' },
             'HOUSING': { label: '居住', color: 'bg-amber-400' },
             'BILLS': { label: '繳費', color: 'bg-rose-400' },
-            'OTHER': { label: '其他', color: 'bg-slate-400' }
+            'OTHER': { label: '其他/轉帳', color: 'bg-slate-400' }
         };
 
-        // 👁️ 切換密碼顯示功能
+        // 格式化數字輔助函數：將 100000 轉換為 100,000 
+        function formatInputNumber(num) {
+            let parsed = parseFloat(num);
+            if (isNaN(parsed)) return 0;
+            return parsed.toLocaleString('en-US', { maximumFractionDigits: 2 });
+        }
+
+        // 解析包含逗號的字串回到純數字
+        function parseCleanNumber(val) {
+            if (typeof val !== 'string') return parseFloat(val) || 0;
+            return parseFloat(val.replace(/,/g, '')) || 0;
+        }
+
         function togglePasswordVisibility() {
             const pwdInput = document.getElementById('master-password-input');
             const icon = document.getElementById('toggle-pwd-icon');
             if (pwdInput.type === 'password') {
-                pwdInput.type = 'text';
-                icon.classList.remove('fa-eye');
-                icon.classList.add('fa-eye-slash');
+                pwdInput.type = 'text'; icon.classList.remove('fa-eye'); icon.classList.add('fa-eye-slash');
             } else {
-                pwdInput.type = 'password';
-                icon.classList.remove('fa-eye-slash');
-                icon.classList.add('fa-eye');
+                pwdInput.type = 'password'; icon.classList.remove('fa-eye-slash'); icon.classList.add('fa-eye');
             }
         }
 
-        // ==========================================
-        // 🛡️ 終極防呆版解鎖與錯誤捕捉系統
-        // ==========================================
         function unlockDashboard() {
             try {
                 const pwdInput = document.getElementById('master-password-input').value;
                 if (!pwdInput) return alert('請輸入密碼');
-
-                if (typeof CryptoJS === 'undefined') {
-                    return alert('❌ 無法載入 CryptoJS 加密模組。\n請確認網路連線，或暫時關閉擋廣告外掛。');
-                }
+                if (typeof CryptoJS === 'undefined') return alert('❌ 無法載入 CryptoJS 加密模組。\n請確認網路連線，或暫時關閉擋廣告外掛。');
 
                 masterPassword = pwdInput;
-                
                 let encryptedData;
-                try {
-                    encryptedData = localStorage.getItem('cyber_wealth_encrypted');
-                } catch (storageErr) {
-                    return alert('❌ 無法讀取本地數據！您的瀏覽器可能阻擋了存取權限。');
-                }
+                try { encryptedData = localStorage.getItem('cyber_wealth_encrypted'); } catch (e) { return alert('❌ 無法讀取本地數據！'); }
 
                 if (!encryptedData) {
-                    accounts = defaultDemoAccounts;
-                    stocks = defaultDemoStocks;
-                    expenses = defaultDemoExpenses;
-                    budget = { monthly: 10000 };
-                    saveAndEncryptData();
-                    proceedToUnlock();
+                    accounts = defaultDemoAccounts; stocks = defaultDemoStocks; expenses = defaultDemoExpenses; budget = { monthly: 10000 };
+                    saveAndEncryptData(); proceedToUnlock();
                 } else {
                     let parsed = {};
                     let decryptedText = "";
-                    
                     try {
                         const bytes = CryptoJS.AES.decrypt(encryptedData, masterPassword);
                         decryptedText = bytes.toString(CryptoJS.enc.Utf8);
-                    } catch (decryptErr) {
-                        return alert('❌ 密碼錯誤！無法解密本地資料。請點擊 👁️ 檢查是否被手機自動輸入成大寫。');
-                    }
+                    } catch (e) { return alert('❌ 密碼錯誤！無法解密。'); }
                     
-                    if (!decryptedText) {
-                        return alert('❌ 密碼錯誤！請點擊 👁️ 檢查是否輸入正確。');
-                    }
+                    if (!decryptedText) return alert('❌ 密碼錯誤！請檢查是否輸入正確。');
                     
                     parsed = JSON.parse(decryptedText);
                     if (!parsed || typeof parsed !== 'object') parsed = {};
                     
-                    // 安全讀取舊資料，若無新功能屬性則自動補齊
                     accounts = Array.isArray(parsed.accounts) ? parsed.accounts : [];
                     stocks = Array.isArray(parsed.stocks) ? parsed.stocks : [];
-                    expenses = Array.isArray(parsed.expenses) ? parsed.expenses : [];
+                    expenses = Array.isArray(parsed.expenses) ? parsed.expenses.map(e => ({
+                        ...e, flowType: e.flowType || 'OUT', paymentMethod: e.paymentMethod || ''
+                    })) : [];
                     budget = parsed.budget || { monthly: 10000 };
                     
                     proceedToUnlock();
                 }
-            } catch (err) {
-                console.error("解鎖時發生致命錯誤：", err);
-                alert("❌ 系統發生異常：" + err.message);
-            }
+            } catch (err) { alert("❌ 系統發生異常：" + err.message); }
         }
 
         function proceedToUnlock() {
             try {
                 updateDashboard(); 
                 document.getElementById('crypto-lock-screen').classList.add('opacity-0', 'pointer-events-none');
-                const content = document.getElementById('dashboard-content');
-                content.classList.remove('opacity-20', 'pointer-events-none');
-            } catch (err) {
-                console.error("渲染儀表板時報錯：", err);
-                alert("❌ 讀取資料成功，但渲染介面失敗！\n錯誤原因：" + err.message);
-            }
+                document.getElementById('dashboard-content').classList.remove('opacity-20', 'pointer-events-none');
+            } catch (err) { alert("❌ 渲染介面失敗！\n錯誤原因：" + err.message); }
         }
 
         function saveAndEncryptData() {
             if (!masterPassword) return;
-            const dataToEncrypt = JSON.stringify({ accounts, stocks, expenses, budget });
-            const ciphertext = CryptoJS.AES.encrypt(dataToEncrypt, masterPassword).toString();
+            const ciphertext = CryptoJS.AES.encrypt(JSON.stringify({ accounts, stocks, expenses, budget }), masterPassword).toString();
             localStorage.setItem('cyber_wealth_encrypted', ciphertext);
         }
 
         function lockSystem() {
             masterPassword = "";
             document.getElementById('master-password-input').value = "";
-            document.getElementById('master-password-input').type = "password"; // 鎖
+            document.getElementById('master-password-input').type = "password";
+            document.getElementById('toggle-pwd-icon').classList.replace('fa-eye-slash', 'fa-eye');
+            document.getElementById('crypto-lock-screen').classList.remove('opacity-0', 'pointer-events-none');
+            document.getElementById('dashboard-content').classList.add('opacity-20', 'pointer-events-none');
+        }
+
+        function resetToDemoData() {
+            if (confirm('⚠️ 確定要強制重置所有加密資料並恢復初始狀態嗎？')) {
+                localStorage.removeItem('cyber_wealth_encrypted'); location.reload();
+            }
+        }
+
+        function updateDashboard() {
+            let totalCash = 0, totalCreditCardDebt = 0, totalCreditCardLimit = 0, totalLoanDebt = 0, totalStockValue = 0;
+            stocks.forEach(s => totalStockValue += (parseFloat(s.shares) || 0) * (parseFloat(s.current) || 0));
+            accounts.forEach(acc => {
+                let val = parseFloat(acc.balance) || 0; if (acc.currency === 'USD') val *= 7.8;
+                if (acc.type === 'CASH') totalCash += val;
+                else if (acc.type === 'CREDIT_CARD') { totalCreditCardDebt += Math.abs(val); totalCreditCardLimit += parseFloat(acc.limit) || 0; }
+                else if (acc.type === 'LOAN') totalLoanDebt += Math.abs(val);
+            });
+
+            let totalAssets = totalCash + totalStockValue, totalLiabilities = totalLoanDebt + totalCreditCardDebt;
+            document.getElementById('net-worth-display').innerText = formatCurrency(totalAssets - totalLiabilities);
+            document.getElementById('total-assets-display').innerText = formatCurrency(totalAssets);
+            document.getElementById('total-liabilities-display').innerText = formatCurrency(totalLiabilities);
+            document.getElementById('total-stocks-display').innerText = formatCurrency(totalStockValue);
+            document.getElementById('mortgage-balance-display').innerText = formatCurrency(totalLoanDebt);
+
+            let debtRatio = totalAssets > 0 ? (totalLiabilities / totalAssets) * 100 : 0;
+            document.getElementById('debt-ratio-text').innerText = debtRatio.toFixed(1) + '%';
+            document.getElementById('debt-ratio-bar').style.width = Math.min(debtRatio, 100) + '%';
+
+            let cardUtilRatio = totalCreditCardLimit > 0 ? (totalCreditCardDebt / totalCreditCardLimit) * 100 : 0;
+            document.getElementById('card-util-text').innerText = cardUtilRatio.toFixed(1) + '%';
+            document.getElementById('card-util-bar').style.width = Math.min(cardUtilRatio, 100) + '%';
+
+            renderAccountsTable(); renderStocksTable(); renderCashPoolChart(totalCash);
+            
+            document.getElementById('monthly-budget-input').value = formatInputNumber(budget.monthly);
+            renderExpensesTable(); renderBudgetAnalysis();
+        }
+
+        function renderExpensesTable() {
+            const tbody = document.getElementById('expenses-table-body');
+            tbody.innerHTML = '';
+            const sortedExpenses = [...expenses].sort((a, b) => new Date(b.date) - new Date(a.date));
+
+            if (sortedExpenses.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" class="py-4 text-center text-slate-500 text-xs">尚無記帳紀錄</td></tr>`;
+                return;
+            }
+
+            sortedExpenses.forEach(exp => {
+                const originalIndex = expenses.findIndex(e => e.id === exp.id);
+                let flowColor = 'text-rose-400';
+                if (exp.flowType === 'IN') flowColor = 'text-emerald-400';
+                if (exp.flowType === 'TRANSFER') flowColor = 'text-cyan-400';
+
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-800/30 transition text-slate-200">
+                        <td class="py-2 pl-2">
+                            <input type="date" value="${exp.date}" onchange="updateExpenseField(${originalIndex}, 'date', this.value)" class="bg-transparent border-b border-transparent hover:border-slate-700 focus:border-neonOrange focus:outline-none text-[11px] font-mono w-full text-slate-400">
+                        </td>
+                        <td class="py-2">
+                            <select onchange="updateExpenseField(${originalIndex}, 'flowType', this.value)" class="bg-slate-950 border border-slate-800 rounded p-0.5 text-[11px] font-bold focus:border-neonOrange ${flowColor}">
+                                <option value="OUT" ${exp.flowType==='OUT'?'selected':''}>支出</option>
+                                <option value="IN" ${exp.flowType==='IN'?'selected':''}>收入</option>
+                                <option value="TRANSFER" ${exp.flowType==='TRANSFER'?'selected':''}>轉帳</option>
+                            </select>
+                        </td>
+                        <td class="py-2">
+                            <select onchange="updateExpenseField(${originalIndex}, 'category', this.value)" class="bg-slate-950 border border-slate-800 rounded p-0.5 text-[11px] focus:border-neonOrange">
+                                ${Object.keys(categoryMap).map(key => `<option value="${key}" ${exp.category === key ? 'selected' : ''}>${categoryMap[key].label}</option>`).join('')}
+                            </select>
+                        </td>
+                        <td class="py-2 pr-2">
+                            <input type="text" list="pay-methods" value="${exp.paymentMethod || ''}" onchange="updateExpenseField(${originalIndex}, 'paymentMethod', this.value)" placeholder="如:八達通/轉帳.." class="bg-transparent border-b border-transparent hover:border-slate-700 focus:border-neonOrange focus:outline-none w-full px-1 text-[11px] text-slate-300">
+                        </td>
+                        <td class="py-2 pr-2">
+                            <input type="text" value="${exp.desc}" onchange="updateExpenseField(${originalIndex}, 'desc', this.value)" placeholder="輸入內容..." class="bg-transparent border-b border-transparent hover:border-slate-700 focus:border-neonOrange focus:outline-none w-full px-1 text-slate-200">
+                        </td>
+                        <td class="py-2 text-right pr-4">
+                            <input type="text" inputmode="decimal" value="${formatInputNumber(exp.amount)}" onchange="updateExpenseField(${originalIndex}, 'amount', this.value)" class="bg-slate-950 border border-slate-800 focus:border-neonOrange focus:outline-none rounded text-right px-1.5 py-0.5 w-full font-mono font-bold text-white">
+                        </td>
+                        <td class="py-2 text-center">
+                            <button onclick="deleteExpense(${originalIndex})" class="text-rose-500 hover:text-rose-400 transition transform hover:scale-110"><i class="fa-solid fa-trash"></i></button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        function renderBudgetAnalysis() {
+            const currentMonthStr = new Date().toISOString().slice(0, 7);
+            const thisMonthExpenses = expenses.filter(e => e.date && e.date.startsWith(currentMonthStr));
+            
+            let totalSpent = 0;
+            const categoryTotals = {};
+            Object.keys(categoryMap).forEach(k => categoryTotals[k] = 0);
+
+            thisMonthExpenses.forEach(exp => {
+                if (exp.flowType === 'OUT') {
+                    const amt = parseFloat(exp.amount) || 0;
+                    totalSpent += amt;
+                    if (categoryTotals[exp.category] !== undefined) categoryTotals[exp.category] += amt;
+                    else categoryTotals['OTHER'] += amt;
+                }
+            });
+
+            const monthlyBudget = parseFloat(budget.monthly) || 0;
+            const remaining = monthlyBudget - totalSpent;
+            const pct = monthlyBudget > 0 ? (totalSpent / monthlyBudget) * 100 : 0;
+
+            let barColor = 'bg-emerald-400', statusTextColor = 'text-emerald-400';
+            if (pct >= 75) { barColor = 'bg-amber-400'; statusTextColor = 'text-amber-400'; }
+            if (pct >= 90) { barColor = 'bg-rose-500 warning-pulse'; statusTextColor = 'text-rose-400'; }
+
+            document.getElementById('budget-month-label').innerText = `本月已花費 (${currentMonthStr} 排除轉帳)`;
+            document.getElementById('budget-spent-text').innerText = `HK$ ${totalSpent.toLocaleString()} / HK$ ${monthlyBudget.toLocaleString()}`;
+            
+            const barEl = document.getElementById('budget-progress-bar');
+            barEl.style.width = Math.min(pct, 100) + '%';
+            barEl.className = `h-full transition-all duration-500 rounded-full ${barColor}`;
+
+            const statusEl = document.getElementById('budget-status-text');
+            if (remaining < 0) statusEl.innerHTML = `<span class="text-rose-500 font-bold">超支: HK$ ${Math.abs(remaining).toLocaleString()}</span>`;
+            else statusEl.innerHTML = `<span class="${statusTextColor}">剩餘預算: HK$ ${remaining.toLocaleString()}</span>`;
+
+            const catListContainer = document.getElementById('category-breakdown-list');
+            catListContainer.innerHTML = '';
+            
+            const sortedCats = Object.keys(categoryTotals).map(k => ({ key: k, amount: categoryTotals[k] })).filter(c => c.amount > 0).sort((a, b) => b.amount - a.amount);
+
+            if (sortedCats.length === 0) {
+                catListContainer.innerHTML = `<div class="text-xs text-slate-500">本月尚未有任何支出</div>`;
+            } else {
+                sortedCats.forEach(cat => {
+                    const catPct = totalSpent > 0 ? (cat.amount / totalSpent) * 100 : 0;
+                    const mapInfo = categoryMap[cat.key];
+                    catListContainer.innerHTML += `
+                        <div class="flex items-center justify-between text-[11px] mb-1.5">
+                            <div class="flex items-center gap-2 w-1/3"><span class="w-2 h-2 rounded-full ${mapInfo.color}"></span><span class="text-slate-300">${mapInfo.label}</span></div>
+                            <div class="w-1/3 text-right text-slate-400">${catPct.toFixed(1)}%</div>
+                            <div class="w-1/3 text-right font-mono font-bold text-slate-200">HK$ ${cat.amount.toLocaleString()}</div>
+                        </div>
+                    `;
+                });
+            }
+        }
+
+        // 升級：存入資料時，確保將帶有逗號的字串清洗轉回純數字
+        function updateExpenseField(index, field, val) { 
+            expenses[index][field] = (field === 'amount') ? parseCleanNumber(val) : val; 
+            saveAndEncryptData(); updateDashboard(); 
+        }
+        function updateBudgetSetting(val) { 
+            budget.monthly = parseCleanNumber(val); 
+            saveAndEncryptData(); updateDashboard(); 
+        }
+        function addNewExpenseRow() { 
+            const today = new Date().toISOString().split('T')[0]; 
+            expenses.push({ id: Date.now(), date: today, flowType: 'OUT', category: 'FOOD', paymentMethod: '現金', desc: '', amount: 0 }); 
+            saveAndEncryptData(); updateDashboard(); 
+        }
+        function deleteExpense(index) { if (confirm('確定刪除這筆紀錄嗎？')) { expenses.splice(index, 1); saveAndEncryptData(); updateDashboard(); } }
+
+        function renderAccountsTable() {
+            const tbody = document.getElementById('accounts-table-body');
+            tbody.innerHTML = '';
+            if (accounts.length === 0) { tbody.innerHTML = `<tr><td colspan="6" class="py-4 text-center text-slate-500 text-xs">尚無資產資料</td></tr>`; return; }
+            const accountsWithIndex = accounts.map((acc, index) => ({ ...acc, originalIndex: index }));
+            const groupedAccounts = accountsWithIndex.reduce((acc, current) => {
+                const bank = (current.institution || '未分類').toString().toUpperCase();
+                if (!acc[bank]) acc[bank] = []; acc[bank].push(current); return acc;
+            }, {});
+
+            for (const [institution, instAccounts] of Object.entries(groupedAccounts)) {
+                tbody.innerHTML += `<tr class="bg-slate-800/40 border-t border-slate-700/50"><td colspan="6" class="py-2 pl-3 text-cyan-400 font-bold tracking-widest text-xs uppercase shadow-sm"><i class="fa-solid fa-building-columns mr-2 opacity-80"></i>${institution}</td></tr>`;
+                const typeOrder = { 'CASH': 1, 'CREDIT_CARD': 2, 'LOAN': 3 };
+                instAccounts.sort((a, b) => (typeOrder[a.type] || 99) - (typeOrder[b.type] || 99));
+
+                instAccounts.forEach(acc => {
+                    const idx = acc.originalIndex;
+                    let typeColorClass = acc.type === 'CREDIT_CARD' ? 'text-amber-400' : (acc.type === 'LOAN' ? 'text-rose-400' : 'text-emerald-400');
+                    tbody.innerHTML += `
+                        <tr class="hover:bg-slate-800/30 transition text-slate-200">
+                            <td class="py-2 pl-6"><input type="text" value="${acc.institution || ''}" onchange="updateAccountField(${idx}, 'institution', this.value)" class="bg-transparent border-b border-transparent hover:border-slate-700 focus:border-cyan-400 focus:outline-none px-1 w-16 font-mono text-slate-500 text-[10px] uppercase"></td>
+                            <td class="py-2"><input type="text" value="${acc.name || ''}" onchange="updateAccountField(${idx}, 'name', this.value)" class="bg-transparent border-b border-transparent hover:border-slate-700 focus:border-cyan-400 focus:outline-none px-1 w-full text-slate-200 font-medium"></td>
+                            <td class="py-2"><select onchange="updateAccountField(${idx}, 'type', this.value)" class="bg-slate-950 border border-slate-800 rounded p-0.5 text-[11px] font-bold ${typeColorClass}"><option value="CASH" ${acc.type==='CASH'?'selected':''}>CASH</option><option value="CREDIT_CARD" ${acc.type==='CREDIT_CARD'?'selected':''}>CARD</option><option value="LOAN" ${acc.type==='LOAN'?'selected':''}>LOAN</option></select></td>
+                            <td class="py-2"><select onchange="updateAccountField(${idx}, 'currency', this.value)" class="bg-slate-950 border border-slate-800 rounded p-0.5 text-[11px]"><option value="HKD" ${acc.currency==='HKD'?'selected':''}>HKD</option><option value="USD" ${acc.currency==='USD'?'selected':''}>USD</option></select></td>
+                            <td class="py-2 text-right">
+                                <input type="text" inputmode="decimal" value="${formatInputNumber(acc.balance)}" onchange="updateAccountField(${idx}, 'balance', this.value)" class="bg-slate-950 border border-slate-800 focus:border-cyan-400 focus:outline-none rounded text-right px-1.5 py-0.5 w-28 font-mono font-bold ${acc.balance < 0 ? 'text-rose-400' : 'text-white'}">
+                                ${acc.type === 'CREDIT_CARD' ? `<div class="text-[9px] text-slate-500 mt-0.5">額度:<input type="text" inputmode="decimal" value="${formatInputNumber(acc.limit)}" onchange="updateAccountField(${idx}, 'limit', this.value)" class="w-16 bg-transparent text-right border-b border-transparent hover:border-slate-700 focus:outline-none font-mono"></div>` : ''}
+                            </td>
+                            <td class="py-2 text-center"><button onclick="deleteAccount(${idx})" class="text-rose-500 hover:text-rose-400 transition transform hover:scale-110"><i class="fa-solid fa-trash"></i></button></td>
+                        </tr>
+                    `;
+                });
+            }
+        }
+
+        function renderStocksTable() {
+            const tbody = document.getElementById('stocks-table-body');
+            tbody.innerHTML = '';
+            stocks.forEach((stk, index) => {
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-800/20 text-slate-200">
+                        <td class="py-2"><input type="text" value="${stk.institution || ''}" onchange="updateStockField(${index}, 'institution', this.value)" class="w-12 bg-transparent text-slate-400 font-bold text-[10px] uppercase"><input type="text" value="${stk.code || ''}" onchange="updateStockField(${index}, 'code', this.value)" class="w-20 bg-transparent font-mono block text-white focus:outline-none border-b border-transparent focus:border-cyan-400"></td>
+                        <td class="py-2"><input type="text" inputmode="decimal" value="${formatInputNumber(stk.shares)}" onchange="updateStockField(${index}, 'shares', this.value)" class="w-16 bg-slate-950 border border-slate-800 font-mono text-center rounded"></td>
+                        <td class="py-2"><input type="text" inputmode="decimal" value="${formatInputNumber(stk.cost)}" onchange="updateStockField(${index}, 'cost', this.value)" class="w-16 bg-slate-950 border border-slate-800 font-mono text-center rounded text-slate-400"></td>
+                        <td class="py-2 text-right"><input type="text" inputmode="decimal" value="${formatInputNumber(stk.current)}" onchange="updateStockField(${index}, 'current', this.value)" class="w-20 bg-slate-950 border border-slate-800 font-mono text-right rounded text-emerald-400 font-bold"></td>
+                        <td class="py-2 text-center"><button onclick="deleteStock(${index})" class="text-rose-500 hover:text-rose-400"><i class="fa-solid fa-trash"></i></button></td>
+                    </tr>
+                `;
+            });
+        }
+
+        function updateAccountField(index, field, val) { accounts[index][field] = (field === 'balance' || field === 'limit') ? parseCleanNumber(val) : val; saveAndEncryptData(); updateDashboard(); }
+        function updateStockField(index, field, val) { stocks[index][field] = (field === 'shares' || field === 'cost' || field === 'current') ? parseCleanNumber(val) : val; saveAndEncryptData(); updateDashboard(); }
+        function addNewAccountRow() { accounts.push({ id: Date.now(), institution: 'NEW', name: '新帳戶名稱', type: 'CASH', currency: 'HKD', balance: 0, limit: 0 }); saveAndEncryptData(); updateDashboard(); }
+        function addNewStockRow() { stocks.push({ id: Date.now(), institution: 'FUTU', code: '0000.HK', shares: 0, cost: 0, current: 0 }); saveAndEncryptData(); updateDashboard(); }
+        function deleteAccount(index) { if(confirm('確定刪除此帳戶嗎？')) { accounts.splice(index, 1); saveAndEncryptData(); updateDashboard(); } }
+        function deleteStock(index) { if(confirm('確定刪除此持股嗎？')) { stocks.splice(index, 1); saveAndEncryptData(); updateDashboard(); } }
+
+        function renderCashPoolChart(totalCash) {
+            document.getElementById('cash-pool-total-display').innerText = formatCurrency(totalCash);
+            const cashAccounts = accounts.filter(a => a.type === 'CASH');
+            if (chartInstance) chartInstance.destroy();
+            if (cashAccounts.length === 0) return;
+            const ctx = document.getElementById('cashPoolChart').getContext('2d');
+            chartInstance = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: cashAccounts.map(a => a.name || '未命名'),
+                    datasets: [{ data: cashAccounts.map(a => parseFloat(a.balance) || 0), backgroundColor: ['#38bdf8', '#a855f7', '#10b981', '#f43f5e', '#fb923c'], borderWidth: 0 }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, cutout: '80%' }
+            });
+        }
+
+        function formatCurrency(amount) { return (amount < 0 ? '-HK$' : 'HK$') + Math.abs(amount).toLocaleString('zh-HK', { maximumFractionDigits: 0 }); }
+        
+        document.getElementById('master-password-input').addEventListener('keydown', function(e) { 
+            if (e.key === 'Enter') { e.preventDefault(); unlockDashboard(); }
+        });
+    </script>
+</body>
+</html>
