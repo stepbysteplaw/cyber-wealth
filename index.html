@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CyberWealth - 安全個人智慧理財主控台</title>
+    <title>CyberWealth - 智慧連動理財主控台</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -44,14 +44,7 @@
 </head>
 <body class="text-slate-300 min-h-screen flex flex-col p-4 md:p-8">
 
-    <datalist id="pay-methods">
-        <option value="現金"></option>
-        <option value="八達通"></option>
-        <option value="PayMe"></option>
-        <option value="AlipayHK"></option>
-    </datalist>
-
-    <div id="crypto-lock-screen" class="fixed inset-0 bg-cyberDark z-50 flex flex-col items-center justify-center p-4 transition-opacity duration-500">
+    <div id="crypto-lock-screen" class="fixed inset-0 bg-cyberDark z-50 flex flex-col items-center justify-center p-4 transition-opacity duration-500 z-[100]">
         <div class="max-w-md w-full bg-slate-900 border border-slate-800 p-8 rounded-2xl text-center shadow-2xl relative overflow-hidden">
             <div class="w-16 h-16 rounded-full bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 text-2xl mx-auto mb-4 animate-bounce">
                 <i class="fa-solid fa-key"></i>
@@ -75,18 +68,18 @@
             <button onclick="resetToDemoData()" class="mt-4 w-full py-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 rounded-xl text-xs transition duration-200">
                 <i class="fa-solid fa-triangle-exclamation mr-1"></i> 忘記密碼或卡住？點此強制清空重置
             </button>
-            <div class="mt-4 text-[10px] text-slate-600">🛡️ 金融級前端加密：所有資產數據皆儲存於本地瀏覽器沙盒，不經 any 伺服器。</div>
+            <div class="mt-4 text-[10px] text-slate-600">🛡️ 金融級前端加密：所有資產數據皆儲存於本地瀏覽器沙盒。</div>
         </div>
     </div>
 
     <header class="max-w-7xl w-full mx-auto flex flex-col md:flex-row justify-between items-center mb-8 border-b border-slate-800 pb-5 gap-4">
         <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-neonCyan to-neonPurple flex items-center justify-center text-white">
-                <i class="fa-solid fa-shield-halved text-lg"></i>
+            <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-neonCyan to-neonPurple flex items-center justify-center text-white shadow-[0_0_15px_rgba(56,189,248,0.5)]">
+                <i class="fa-solid fa-bolt text-lg"></i>
             </div>
             <div>
                 <h1 class="text-2xl font-extrabold text-white tracking-wider flex items-center gap-2">CYBERWEALTH</h1>
-                <p class="text-xs text-slate-500">AES-256 本地加密保護中 · 網頁動態可編輯版</p>
+                <p class="text-xs text-emerald-400 font-bold"><i class="fa-solid fa-link"></i> 帳戶餘額全自動連動中 · AES-256 加密保護</p>
             </div>
         </div>
         <div class="flex items-center gap-3">
@@ -133,7 +126,7 @@
             <div class="lg:col-span-2 bg-slate-900/80 p-6 rounded-2xl border border-slate-800">
                 <div class="flex justify-between items-center mb-4">
                     <h2 class="text-base font-bold text-white tracking-wide">
-                        <i class="fa-solid fa-building-columns text-cyan-400 mr-2"></i>跨機構資產明細
+                        <i class="fa-solid fa-building-columns text-cyan-400 mr-2"></i>跨機構資產明細 <span class="text-xs text-emerald-400 font-normal ml-2">(隨記帳自動連動)</span>
                     </h2>
                     <button onclick="addNewAccountRow()" class="px-2 py-1 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 border border-cyan-500/20 rounded text-xs transition">
                         <i class="fa-solid fa-plus mr-1"></i> 新增帳戶
@@ -147,7 +140,7 @@
                                 <th class="py-2 font-semibold">帳戶名稱</th>
                                 <th class="py-2 font-semibold">類型</th>
                                 <th class="py-2 font-semibold">幣別</th>
-                                <th class="py-2 font-semibold text-right">金額 (HK/US $)</th>
+                                <th class="py-2 font-semibold text-right">當前金額 (HK/US $)</th>
                                 <th class="py-2 font-semibold text-center">操作</th>
                             </tr>
                         </thead>
@@ -156,12 +149,9 @@
                 </div>
             </div>
 
-            <!-- 萬能總現金池分布 -->
             <div class="bg-slate-900/80 p-6 rounded-2xl border border-slate-800 flex flex-col items-center justify-between">
                 <div class="w-full text-left"><h2 class="text-base font-bold text-white tracking-wide">萬能總現金池分布</h2></div>
                 <div class="relative w-44 h-44 my-4"><canvas id="cashPoolChart"></canvas></div>
-                
-                <!-- 🌟 核心升級：顯示 存款減去卡費 後的真實可用手頭淨現金 -->
                 <div id="cash-pool-display-box" class="w-full bg-slate-950 p-2.5 rounded-lg border border-slate-800/60 text-xs text-center transition duration-300">
                     <span class="text-slate-400" id="cash-pool-title-label">手頭淨流動儲備：</span>
                     <span class="font-extrabold text-sm ml-1" id="cash-pool-total-display">HK$ 0</span>
@@ -173,7 +163,7 @@
         <section class="bg-slate-900/80 p-6 rounded-2xl border border-slate-800 w-full hidden" id="credit-card-radar-section">
             <div class="flex justify-between items-center mb-4">
                 <h2 class="text-base font-bold text-white tracking-wide">
-                    <i class="fa-regular fa-credit-card text-amber-400 mr-2"></i>信用卡計費週期雷達 <span class="text-xs text-slate-500 font-normal ml-2">(自動抓取對應卡片之記帳金額)</span>
+                    <i class="fa-regular fa-credit-card text-amber-400 mr-2"></i>信用卡計費週期雷達
                 </h2>
             </div>
             <div id="credit-card-cycle-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4"></div>
@@ -187,7 +177,7 @@
                 
                 <div class="mb-5 bg-slate-950/50 p-4 rounded-xl border border-slate-800 shadow-inner">
                     <div class="flex justify-between text-xs mb-2">
-                        <span class="text-slate-400" id="budget-month-label">本月總支出狀態</span>
+                        <span class="text-slate-400" id="budget-month-label">本月總支出狀態 (已排除轉帳及其他)</span>
                         <span class="font-bold text-white" id="budget-spent-text">HK$ 0 / HK$ 0</span>
                     </div>
                     <div class="w-full h-2.5 bg-slate-800 rounded-full overflow-hidden mb-2">
@@ -224,30 +214,31 @@
             </div>
         </section>
 
-        <!-- 現金流記帳 -->
-        <section class="bg-slate-900/80 p-6 rounded-2xl border border-slate-800 w-full">
-            <div class="flex justify-between items-center mb-4">
+        <!-- 現金流記帳 (全自動連動版) -->
+        <section class="bg-slate-900/80 p-6 rounded-2xl border border-slate-800 w-full relative overflow-hidden">
+            <div class="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-bl-full pointer-events-none"></div>
+            <div class="flex justify-between items-center mb-4 relative z-10">
                 <h2 class="text-base font-bold text-white tracking-wide">
-                    <i class="fa-solid fa-receipt text-neonOrange mr-2"></i>現金流記帳 (支付方式已聯動帳戶)
+                    <i class="fa-solid fa-receipt text-neonOrange mr-2"></i>現金流記帳 <span class="bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded text-[10px] ml-2 border border-emerald-500/30">全自動連動戶頭</span>
                 </h2>
-                <button onclick="addNewExpenseRow()" class="px-2 py-1 bg-neonOrange/10 hover:bg-neonOrange/20 text-neonOrange border border-neonOrange/20 rounded text-xs transition">
+                <button onclick="addNewExpenseRow()" class="px-3 py-1.5 bg-neonOrange hover:bg-orange-500 text-slate-950 font-bold rounded text-xs transition shadow-[0_0_10px_rgba(251,146,60,0.4)]">
                     <i class="fa-solid fa-plus mr-1"></i> 記一筆
                 </button>
             </div>
-            <div class="overflow-x-auto max-h-80 overflow-y-auto pr-2">
+            <div class="overflow-x-auto max-h-[500px] overflow-y-auto pr-2 relative z-10">
                 <table class="w-full text-left text-xs border-collapse">
-                    <thead class="sticky top-0 bg-slate-900 z-10 shadow-sm">
-                        <tr class="border-b border-slate-800 text-slate-500">
-                            <th class="py-2 font-semibold w-[100px]">日期</th>
-                            <th class="py-2 font-semibold w-[80px]">收支</th>
-                            <th class="py-2 font-semibold w-[90px]">分類</th>
-                            <th class="py-2 font-semibold w-[120px]">支付方式/帳戶</th>
-                            <th class="py-2 font-semibold">內容/備註</th>
-                            <th class="py-2 font-semibold text-right w-[110px]">金額 (HK$)</th>
-                            <th class="py-2 font-semibold text-center w-[50px]">操作</th>
+                    <thead class="sticky top-0 bg-slate-900 z-20 shadow-sm border-b border-slate-700">
+                        <tr class="text-slate-400">
+                            <th class="py-3 font-semibold w-[100px] pl-2">日期</th>
+                            <th class="py-3 font-semibold w-[80px]">收支</th>
+                            <th class="py-3 font-semibold w-[90px]">分類</th>
+                            <th class="py-3 font-semibold w-[160px]">支付方式 / 轉帳目標</th>
+                            <th class="py-3 font-semibold">內容/備註</th>
+                            <th class="py-3 font-semibold text-right w-[110px] pr-4">金額 (HK$)</th>
+                            <th class="py-3 font-semibold text-center w-[50px]">操作</th>
                         </tr>
                     </thead>
-                    <tbody id="expenses-table-body" class="divide-y divide-slate-800/40"></tbody>
+                    <tbody id="expenses-table-body" class="divide-y divide-slate-800/60"></tbody>
                 </table>
             </div>
         </section>
@@ -258,37 +249,38 @@
         let accounts = [];
         let stocks = [];
         let expenses = [];
-        let budget = { FOOD: 3000, TRANSPORT: 1000, SHOPPING: 2000, HOUSING: 5000, BILLS: 1500, OTHER: 1000 };
+        let budget = { FOOD: 3000, TRANSPORT: 1000, SHOPPING: 2000, MORTGAGE: 5000, DAILY_BILLS: 1500, OTHER: 1000 };
         let masterPassword = "";
         let chartInstance = null;
 
         const defaultDemoAccounts = [
-            { id: 1, institution: 'SCB', name: '渣打儲蓄戶口', type: 'CASH', currency: 'HKD', balance: 350000, limit: 0, statementDay: null },
-            { id: 2, institution: 'HSBC', name: '匯豐日常戶口', type: 'CASH', currency: 'HKD', balance: 200000, limit: 0, statementDay: null },
-            { id: 3, institution: 'ICBC', name: '工銀亞洲按揭', type: 'LOAN', currency: 'HKD', balance: -4500000, limit: 0, statementDay: null },
-            { id: 4, institution: 'HSBC', name: '匯豐Red信用卡', type: 'CREDIT_CARD', currency: 'HKD', balance: -8000, limit: 50000, statementDay: 15 }
+            { id: 1, institution: 'WALLET', name: 'CASH-1 隨身攜帶現金', type: 'CASH', currency: 'HKD', balance: 2500, limit: 0, statementDay: null },
+            { id: 2, institution: 'HOME', name: 'CASH-2 在家現金', type: 'CASH', currency: 'HKD', balance: 15000, limit: 0, statementDay: null },
+            { id: 3, institution: 'SCB', name: '渣打儲蓄戶口', type: 'CASH', currency: 'HKD', balance: 350000, limit: 0, statementDay: null },
+            { id: 4, institution: 'HSBC', name: '匯豐日常戶口', type: 'CASH', currency: 'HKD', balance: 200000, limit: 0, statementDay: null },
+            { id: 5, institution: 'ICBC', name: '工銀亞洲按揭', type: 'LOAN', currency: 'HKD', balance: -4500000, limit: 0, statementDay: null },
+            { id: 6, institution: 'HSBC', name: '匯豐Red信用卡', type: 'CREDIT_CARD', currency: 'HKD', balance: -8000, limit: 50000, statementDay: 15 }
         ];
         const defaultDemoStocks = [
             { id: 1, institution: 'FUTU', code: '0700.HK', shares: 1000, cost: 320, current: 382.4 }
         ];
         const defaultDemoExpenses = [
-            { id: 1, date: new Date().toISOString().split('T')[0], flowType: 'OUT', category: 'FOOD', paymentMethod: '匯豐Red信用卡', desc: '餐廳晚餐', amount: 450 },
-            { id: 2, date: new Date().toISOString().split('T')[0], flowType: 'OUT', category: 'TRANSPORT', paymentMethod: '八達通', desc: '地鐵儲值', amount: 100 },
-            { id: 3, date: new Date().toISOString().split('T')[0], flowType: 'TRANSFER', category: 'OTHER', paymentMethod: '匯豐 -> 渣打', desc: '每月儲蓄轉帳', amount: 5000 }
+            { id: 1, date: new Date().toISOString().split('T')[0], flowType: 'OUT', category: 'FOOD', payGroup: 'CREDIT', paymentMethod: '匯豐Red信用卡', transferTo: '', desc: '餐廳晚餐', amount: 450 },
+            { id: 2, date: new Date().toISOString().split('T')[0], flowType: 'OUT', category: 'TRANSPORT', payGroup: 'CASH', paymentMethod: 'CASH-1 隨身攜帶現金', transferTo: '', desc: '增值八達通', amount: 100 },
+            { id: 3, date: new Date().toISOString().split('T')[0], flowType: 'TRANSFER', category: 'OTHER', payGroup: 'TRANSFER', paymentMethod: '匯豐日常戶口', transferTo: '渣打儲蓄戶口', desc: '每月儲蓄轉帳', amount: 5000 }
         ];
 
         const categoryMap = {
-            'FOOD': { label: '餐飲', color: 'bg-emerald-400' },
-            'TRANSPORT': { label: '交通', color: 'bg-cyan-400' },
-            'SHOPPING': { label: '購物', color: 'bg-purple-400' },
-            'HOUSING': { label: '居住', color: 'bg-amber-400' },
-            'BILLS': { label: '繳費', color: 'bg-rose-400' },
-            'OTHER': { label: '其他/轉帳', color: 'bg-slate-400' }
+            'FOOD': { label: '餐飲', color: 'bg-emerald-400', showInBudget: true },
+            'TRANSPORT': { label: '交通', color: 'bg-cyan-400', showInBudget: true },
+            'SHOPPING': { label: '購物', color: 'bg-purple-400', showInBudget: true },
+            'MORTGAGE': { label: '按揭', color: 'bg-amber-400', showInBudget: true },
+            'DAILY_BILLS': { label: '日常繳費', color: 'bg-rose-400', showInBudget: true },
+            'OTHER': { label: '其他/轉帳', color: 'bg-slate-400', showInBudget: false }
         };
 
         function formatInputNumber(num) {
-            let parsed = parseFloat(num);
-            if (isNaN(parsed)) return 0;
+            let parsed = parseFloat(num); if (isNaN(parsed)) return 0;
             return parsed.toLocaleString('en-US', { maximumFractionDigits: 2 });
         }
 
@@ -319,7 +311,7 @@
 
                 if (!encryptedData) {
                     accounts = defaultDemoAccounts; stocks = defaultDemoStocks; expenses = defaultDemoExpenses; 
-                    budget = { FOOD: 3000, TRANSPORT: 1000, SHOPPING: 2000, HOUSING: 5000, BILLS: 1500, OTHER: 1000 };
+                    budget = { FOOD: 3000, TRANSPORT: 1000, SHOPPING: 2000, MORTGAGE: 5000, DAILY_BILLS: 1500, OTHER: 1000 };
                     saveAndEncryptData(); proceedToUnlock();
                 } else {
                     let parsed = {}; let decryptedText = "";
@@ -336,16 +328,39 @@
                         ...a, statementDay: a.type === 'CREDIT_CARD' ? (a.statementDay || 15) : null
                     })) : [];
                     stocks = Array.isArray(parsed.stocks) ? parsed.stocks : [];
-                    expenses = Array.isArray(parsed.expenses) ? parsed.expenses.map(e => ({
-                        ...e, flowType: e.flowType || 'OUT', paymentMethod: e.paymentMethod || ''
-                    })) : [];
                     
-                    if (parsed.budget && parsed.budget.monthly !== undefined) {
-                        budget = { FOOD: 3000, TRANSPORT: 1000, SHOPPING: 2000, HOUSING: 5000, BILLS: 1500, OTHER: 1000 };
-                    } else {
-                        budget = parsed.budget || { FOOD: 3000, TRANSPORT: 1000, SHOPPING: 2000, HOUSING: 5000, BILLS: 1500, OTHER: 1000 };
-                    }
-                    Object.keys(categoryMap).forEach(k => { if (budget[k] === undefined) budget[k] = 0; });
+                    // 🌟 完美相容與升級舊資料
+                    expenses = Array.isArray(parsed.expenses) ? parsed.expenses.map(e => {
+                        let cat = e.category;
+                        if (cat === 'HOUSING') cat = 'MORTGAGE';
+                        if (cat === 'BILLS') cat = 'DAILY_BILLS';
+                        
+                        let pm = e.paymentMethod || '';
+                        let toAcc = e.transferTo || '';
+                        let pg = e.payGroup;
+
+                        // 自動拆分舊版的「A -> B」轉帳資料
+                        if (e.flowType === 'TRANSFER' && pm.includes('->')) {
+                            let parts = pm.split('->');
+                            pm = parts[0].trim();
+                            toAcc = parts[1] ? parts[1].trim() : '';
+                        }
+
+                        if (!pg) {
+                            if (e.flowType === 'TRANSFER') pg = 'TRANSFER';
+                            else if (pm.includes('卡')) pg = 'CREDIT';
+                            else if (pm.includes('現金') || pm.toUpperCase().includes('CASH')) pg = 'CASH';
+                            else pg = 'BANK';
+                        }
+                        return { ...e, flowType: e.flowType || 'OUT', paymentMethod: pm, transferTo: toAcc, category: cat, payGroup: pg };
+                    }) : [];
+                    
+                    let oldBudget = parsed.budget || {};
+                    budget = { 
+                        FOOD: oldBudget.FOOD || 3000, TRANSPORT: oldBudget.TRANSPORT || 1000, 
+                        SHOPPING: oldBudget.SHOPPING || 2000, MORTGAGE: oldBudget.MORTGAGE || oldBudget.HOUSING || 5000, 
+                        DAILY_BILLS: oldBudget.DAILY_BILLS || oldBudget.BILLS || 1500, OTHER: oldBudget.OTHER || 1000 
+                    };
                     proceedToUnlock();
                 }
             } catch (err) { alert("❌ 系統發生異常：" + err.message); }
@@ -366,9 +381,7 @@
         }
 
         function lockSystem() {
-            masterPassword = "";
-            document.getElementById('master-password-input').value = "";
-            document.getElementById('master-password-input').type = "password";
+            masterPassword = ""; document.getElementById('master-password-input').value = ""; document.getElementById('master-password-input').type = "password";
             document.getElementById('toggle-pwd-icon').classList.replace('fa-eye-slash', 'fa-eye');
             document.getElementById('crypto-lock-screen').classList.remove('opacity-0', 'pointer-events-none');
             document.getElementById('dashboard-content').classList.add('opacity-20', 'pointer-events-none');
@@ -380,15 +393,32 @@
             }
         }
 
-        function updatePayMethodsDatalist() {
-            const dl = document.getElementById('pay-methods');
-            let optionsHtml = '<option value="現金"></option><option value="八達通"></option><option value="PayMe"></option><option value="AlipayHK"></option>';
-            accounts.forEach(acc => {
-                if (acc.name && acc.name.trim() !== '') {
-                    optionsHtml += `<option value="${acc.name}"></option>`;
-                }
-            });
-            dl.innerHTML = optionsHtml;
+        // ==========================================
+        // 🌟 核心引擎：記帳連動帳戶餘額算盤 (Delta Calculation)
+        // ==========================================
+        function applyTransactionToAccount(flowType, amount, fromAccountName, toAccountName, reverse = false) {
+            let sign = reverse ? -1 : 1;
+            amount = parseFloat(amount) || 0;
+            if (amount === 0) return;
+
+            let fromAcc = accounts.find(a => a.name === fromAccountName);
+            let toAcc = accounts.find(a => a.name === toAccountName);
+
+            // 支出 (OUT): 帳戶餘額減少
+            // (注意：若是信用卡，原本就是負數餘額，減少代表欠更多錢，這在數學上 `-= amount` 剛好正確)
+            if (flowType === 'OUT' && fromAcc) {
+                fromAcc.balance -= (amount * sign);
+            }
+            // 收入 (IN): 帳戶餘額增加
+            else if (flowType === 'IN' && fromAcc) {
+                fromAcc.balance += (amount * sign);
+            }
+            // 轉帳 (TRANSFER): A 減少，B 增加
+            // 如果你把銀行存款轉去信用卡(繳卡費)，銀行存款減少，信用卡負債也減少(變向0靠攏)，邏輯完美！
+            else if (flowType === 'TRANSFER') {
+                if (fromAcc) fromAcc.balance -= (amount * sign);
+                if (toAcc) toAcc.balance += (amount * sign);
+            }
         }
 
         function updateDashboard() {
@@ -398,11 +428,7 @@
             accounts.forEach(acc => {
                 let val = parseFloat(acc.balance) || 0; if (acc.currency === 'USD') val *= 7.8;
                 if (acc.type === 'CASH') totalCash += val;
-                else if (acc.type === 'CREDIT_CARD') { 
-                    // 核心修正：系統中負債用負數儲存，因此這裡取絕對值算卡債總額
-                    totalCreditCardDebt += Math.abs(val); 
-                    totalCreditCardLimit += parseFloat(acc.limit) || 0; 
-                }
+                else if (acc.type === 'CREDIT_CARD') { totalCreditCardDebt += Math.abs(val); totalCreditCardLimit += parseFloat(acc.limit) || 0; }
                 else if (acc.type === 'LOAN') totalLoanDebt += Math.abs(val);
             });
 
@@ -421,30 +447,17 @@
             document.getElementById('card-util-text').innerText = cardUtilRatio.toFixed(1) + '%';
             document.getElementById('card-util-bar').style.width = Math.min(cardUtilRatio, 100) + '%';
 
-            renderAccountsTable(); 
-            renderStocksTable(); 
-            
-            // 🌟 執行「現金池減去信用卡」的升級計算與渲染
-            renderCashPoolChart(totalCash, totalCreditCardDebt);
-            
-            updatePayMethodsDatalist(); 
-            renderExpensesTable(); 
-            renderBudgetAnalysis();
-            renderCreditCardRadar(); 
+            renderAccountsTable(); renderStocksTable(); renderCashPoolChart(totalCash, totalCreditCardDebt);
+            renderExpensesTable(); renderBudgetAnalysis(); renderCreditCardRadar(); 
         }
 
-        // 🌟 專屬升級：萬能總現金池分布與淨流動儲備核算
         function renderCashPoolChart(totalCash, totalCreditCardDebt) {
-            // 可用淨現金 = 現金存款 - 信用卡欠款
             const netCashPool = totalCash - totalCreditCardDebt;
-            
             const boxEl = document.getElementById('cash-pool-display-box');
             const totalEl = document.getElementById('cash-pool-total-display');
             const labelEl = document.getElementById('cash-pool-title-label');
 
             totalEl.innerText = formatCurrency(netCashPool);
-
-            // ⚠️ 視覺化風險防範：若卡債超過手頭現金（超支預支狀態）切換為警告紅
             if (netCashPool < 0) {
                 labelEl.innerText = '🔴 流動儲備赤字(倒貼卡費)：';
                 boxEl.className = 'w-full bg-rose-950/30 p-2.5 rounded-lg border border-rose-500/50 text-xs text-center warning-pulse';
@@ -484,11 +497,9 @@
                 const statementDay = parseInt(card.statementDay) || 15;
                 let cycleStart, cycleEnd;
                 if (currentDate <= statementDay) {
-                    cycleStart = new Date(currentYear, currentMonth - 1, statementDay + 1);
-                    cycleEnd = new Date(currentYear, currentMonth, statementDay);
+                    cycleStart = new Date(currentYear, currentMonth - 1, statementDay + 1); cycleEnd = new Date(currentYear, currentMonth, statementDay);
                 } else {
-                    cycleStart = new Date(currentYear, currentMonth, statementDay + 1);
-                    cycleEnd = new Date(currentYear, currentMonth + 1, statementDay);
+                    cycleStart = new Date(currentYear, currentMonth, statementDay + 1); cycleEnd = new Date(currentYear, currentMonth + 1, statementDay);
                 }
 
                 const offsetStart = new Date(cycleStart.getTime() - (cycleStart.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
@@ -554,33 +565,88 @@
                     tbody.innerHTML += `
                         <tr class="hover:bg-slate-800/30 transition text-slate-200">
                             <td class="py-2 pl-6"><input type="text" value="${acc.institution || ''}" onchange="updateAccountField(${idx}, 'institution', this.value)" class="bg-transparent border-b border-transparent hover:border-slate-700 focus:border-cyan-400 focus:outline-none px-1 w-16 font-mono text-slate-500 text-[10px] uppercase"></td>
-                            <td class="py-2"><input type="text" value="${acc.name || ''}" onchange="updateAccountField(${idx}, 'name', this.value)" class="bg-transparent border-b border-transparent hover:border-slate-700 focus:border-cyan-400 focus:outline-none px-1 w-full text-slate-200 font-medium"></td>
+                            <td class="py-2"><input type="text" value="${acc.name || ''}" onchange="updateAccountField(${idx}, 'name', this.value)" class="bg-transparent border-b border-transparent hover:border-slate-700 focus:border-cyan-400 focus:outline-none px-1 w-full text-slate-200 font-bold"></td>
                             <td class="py-2"><select onchange="updateAccountField(${idx}, 'type', this.value)" class="bg-slate-950 border border-slate-800 rounded p-0.5 text-[11px] font-bold ${typeColorClass}"><option value="CASH" ${acc.type==='CASH'?'selected':''}>CASH</option><option value="CREDIT_CARD" ${acc.type==='CREDIT_CARD'?'selected':''}>CARD</option><option value="LOAN" ${acc.type==='LOAN'?'selected':''}>LOAN</option></select></td>
                             <td class="py-2"><select onchange="updateAccountField(${idx}, 'currency', this.value)" class="bg-slate-950 border border-slate-800 rounded p-0.5 text-[11px]"><option value="HKD" ${acc.currency==='HKD'?'selected':''}>HKD</option><option value="USD" ${acc.currency==='USD'?'selected':''}>USD</option></select></td>
-                            <td class="py-2 text-right"><input type="text" inputmode="decimal" value="${formatInputNumber(acc.balance)}" onchange="updateAccountField(${idx}, 'balance', this.value)" class="bg-slate-950 border border-slate-800 focus:border-cyan-400 focus:outline-none rounded text-right px-1.5 py-0.5 w-28 font-mono font-bold ${acc.balance < 0 ? 'text-rose-400' : 'text-white'}">${limitAndStatementHtml}</td>
+                            <td class="py-2 text-right">
+                                <input type="text" inputmode="decimal" value="${formatInputNumber(acc.balance)}" onchange="updateAccountField(${idx}, 'balance', this.value)" class="bg-slate-950 border border-slate-800 focus:border-emerald-400 focus:outline-none rounded text-right px-1.5 py-0.5 w-28 font-mono font-bold ${acc.balance < 0 ? 'text-rose-400' : 'text-emerald-400'} shadow-inner">
+                                ${limitAndStatementHtml}
+                            </td>
                             <td class="py-2 text-center"><button onclick="deleteAccount(${idx})" class="text-rose-500 hover:text-rose-400 transition transform hover:scale-110"><i class="fa-solid fa-trash"></i></button></td>
                         </tr>`;
                 });
             }
         }
 
+        // 🌟 獲取不同群組的帳戶清單選項
+        function getPaymentOptionsHtml(payGroup, selectedMethod) {
+            let options = [];
+            if (payGroup === 'CASH') {
+                options = accounts.filter(a => a.type === 'CASH' && (a.name.includes('現金') || a.name.toUpperCase().includes('CASH'))).map(a => a.name);
+                if (options.length === 0) options = ['請先新增現金帳戶'];
+            } else if (payGroup === 'CREDIT') {
+                options = accounts.filter(a => a.type === 'CREDIT_CARD').map(a => a.name);
+                if (options.length === 0) options = ['請先新增信用卡'];
+            } else if (payGroup === 'BANK') {
+                options = accounts.filter(a => a.type === 'CASH' && !a.name.includes('現金') && !a.name.toUpperCase().includes('CASH')).map(a => a.name);
+                if (options.length === 0) options = ['請先新增銀行戶口'];
+            } else if (payGroup === 'ALL') {
+                options = accounts.map(a => a.name);
+            }
+
+            if (selectedMethod && !options.includes(selectedMethod)) options.unshift(selectedMethod);
+            return options.map(opt => `<option value="${opt}" ${opt === selectedMethod ? 'selected' : ''}>${opt}</option>`).join('');
+        }
+
         function renderExpensesTable() {
             const tbody = document.getElementById('expenses-table-body'); tbody.innerHTML = '';
             const sortedExpenses = [...expenses].sort((a, b) => new Date(b.date) - new Date(a.date));
-            if (sortedExpenses.length === 0) { tbody.innerHTML = `<tr><td colspan="7" class="py-4 text-center text-slate-500 text-xs">尚無記帳紀錄</td></tr>`; return; }
+            if (sortedExpenses.length === 0) { tbody.innerHTML = `<tr><td colspan="7" class="py-8 text-center text-slate-500 text-sm"><i class="fa-solid fa-wallet text-2xl block mb-2 opacity-50"></i>開始記錄你的第一筆現金流吧！</td></tr>`; return; }
 
             sortedExpenses.forEach(exp => {
                 const originalIndex = expenses.findIndex(e => e.id === exp.id);
                 let flowColor = 'text-rose-400'; if (exp.flowType === 'IN') flowColor = 'text-emerald-400'; if (exp.flowType === 'TRANSFER') flowColor = 'text-cyan-400';
+                
+                // 🌟 兩階段智能支付下拉選單
+                let paymentHtml = '';
+                if (exp.flowType === 'TRANSFER') {
+                    paymentHtml = `
+                        <div class="flex flex-col gap-1 w-full bg-slate-900/50 p-1 rounded border border-slate-800">
+                            <select onchange="updateExpenseField(${originalIndex}, 'paymentMethod', this.value)" class="bg-slate-950 border border-slate-700 rounded p-0.5 text-[11px] focus:border-neonOrange text-slate-300 w-full font-medium">
+                                <option value="" disabled ${!exp.paymentMethod ? 'selected' : ''}>從哪裡轉出?</option>
+                                ${getPaymentOptionsHtml('ALL', exp.paymentMethod)}
+                            </select>
+                            <div class="text-center text-[10px] text-slate-500 leading-none"><i class="fa-solid fa-arrow-down text-cyan-500/50"></i> 轉至</div>
+                            <select onchange="updateExpenseField(${originalIndex}, 'transferTo', this.value)" class="bg-slate-950 border border-slate-700 rounded p-0.5 text-[11px] focus:border-neonOrange text-emerald-400 w-full font-medium">
+                                <option value="" disabled ${!exp.transferTo ? 'selected' : ''}>轉入哪裡?</option>
+                                ${getPaymentOptionsHtml('ALL', exp.transferTo)}
+                            </select>
+                        </div>
+                    `;
+                } else {
+                    paymentHtml = `
+                        <div class="flex flex-col gap-1 w-full">
+                            <select onchange="updateExpenseField(${originalIndex}, 'payGroup', this.value)" class="bg-slate-900 border border-slate-700 rounded p-0.5 text-[10px] focus:border-neonOrange text-slate-400 w-full font-bold">
+                                <option value="CASH" ${exp.payGroup === 'CASH' ? 'selected' : ''}>💵 現金 (Cash)</option>
+                                <option value="BANK" ${exp.payGroup === 'BANK' ? 'selected' : ''}>🏦 銀行/EPS/PayMe</option>
+                                <option value="CREDIT" ${exp.payGroup === 'CREDIT' ? 'selected' : ''}>💳 信用卡</option>
+                            </select>
+                            <select onchange="updateExpenseField(${originalIndex}, 'paymentMethod', this.value)" class="bg-slate-950 border border-slate-800 rounded p-0.5 text-[11px] focus:border-neonOrange text-amber-400 w-full font-bold shadow-inner">
+                                ${getPaymentOptionsHtml(exp.payGroup, exp.paymentMethod)}
+                            </select>
+                        </div>
+                    `;
+                }
+
                 tbody.innerHTML += `
-                    <tr class="hover:bg-slate-800/30 transition text-slate-200">
-                        <td class="py-2 pl-2"><input type="date" value="${exp.date}" onchange="updateExpenseField(${originalIndex}, 'date', this.value)" class="bg-transparent border-b border-transparent hover:border-slate-700 focus:border-neonOrange focus:outline-none text-[11px] font-mono w-full text-slate-400"></td>
-                        <td class="py-2"><select onchange="updateExpenseField(${originalIndex}, 'flowType', this.value)" class="bg-slate-950 border border-slate-800 rounded p-0.5 text-[11px] font-bold focus:border-neonOrange ${flowColor}"><option value="OUT" ${exp.flowType==='OUT'?'selected':''}>支出</option><option value="IN" ${exp.flowType==='IN'?'selected':''}>收入</option><option value="TRANSFER" ${exp.flowType==='TRANSFER'?'selected':''}>轉帳</option></select></td>
-                        <td class="py-2"><select onchange="updateExpenseField(${originalIndex}, 'category', this.value)" class="bg-slate-950 border border-slate-800 rounded p-0.5 text-[11px] focus:border-neonOrange">${Object.keys(categoryMap).map(key => `<option value="${key}" ${exp.category === key ? 'selected' : ''}>${categoryMap[key].label}</option>`).join('')}</select></td>
-                        <td class="py-2 pr-2"><input type="text" list="pay-methods" value="${exp.paymentMethod || ''}" onchange="updateExpenseField(${originalIndex}, 'paymentMethod', this.value)" placeholder="選擇支付帳戶" class="bg-transparent border-b border-transparent hover:border-slate-700 focus:border-neonOrange focus:outline-none w-full px-1 text-[11px] text-slate-300 font-bold"></td>
-                        <td class="py-2 pr-2"><input type="text" value="${exp.desc}" onchange="updateExpenseField(${originalIndex}, 'desc', this.value)" placeholder="輸入備註..." class="bg-transparent border-b border-transparent hover:border-slate-700 focus:border-neonOrange focus:outline-none w-full px-1 text-slate-200"></td>
-                        <td class="py-2 text-right pr-4"><input type="text" inputmode="decimal" value="${formatInputNumber(exp.amount)}" onchange="updateExpenseField(${originalIndex}, 'amount', this.value)" class="bg-slate-950 border border-slate-800 focus:border-neonOrange focus:outline-none rounded text-right px-1.5 py-0.5 w-full font-mono font-bold text-white"></td>
-                        <td class="py-2 text-center"><button onclick="deleteExpense(${originalIndex})" class="text-rose-500 hover:text-rose-400 transition transform hover:scale-110"><i class="fa-solid fa-trash"></i></button></td>
+                    <tr class="hover:bg-slate-800/50 transition text-slate-200">
+                        <td class="py-3 pl-2"><input type="date" value="${exp.date}" onchange="updateExpenseField(${originalIndex}, 'date', this.value)" class="bg-transparent border-b border-transparent hover:border-slate-700 focus:border-neonOrange focus:outline-none text-[11px] font-mono w-full text-slate-400"></td>
+                        <td class="py-3"><select onchange="updateExpenseField(${originalIndex}, 'flowType', this.value)" class="bg-slate-950 border border-slate-800 rounded p-1 text-[11px] font-bold focus:border-neonOrange shadow-sm ${flowColor}"><option value="OUT" ${exp.flowType==='OUT'?'selected':''}>支出</option><option value="IN" ${exp.flowType==='IN'?'selected':''}>收入</option><option value="TRANSFER" ${exp.flowType==='TRANSFER'?'selected':''}>轉帳</option></select></td>
+                        <td class="py-3"><select onchange="updateExpenseField(${originalIndex}, 'category', this.value)" class="bg-slate-950 border border-slate-800 rounded p-1 text-[11px] focus:border-neonOrange shadow-sm">${Object.keys(categoryMap).map(key => `<option value="${key}" ${exp.category === key ? 'selected' : ''}>${categoryMap[key].label}</option>`).join('')}</select></td>
+                        <td class="py-3 pr-2">${paymentHtml}</td>
+                        <td class="py-3 pr-2"><input type="text" value="${exp.desc}" onchange="updateExpenseField(${originalIndex}, 'desc', this.value)" placeholder="輸入內容..." class="bg-transparent border-b border-transparent hover:border-slate-700 focus:border-neonOrange focus:outline-none w-full px-1 text-slate-200 font-medium"></td>
+                        <td class="py-3 text-right pr-4"><input type="text" inputmode="decimal" value="${formatInputNumber(exp.amount)}" onchange="updateExpenseField(${originalIndex}, 'amount', this.value)" class="bg-slate-950 border border-slate-800 focus:border-neonOrange focus:outline-none rounded text-right px-2 py-1 w-full font-mono font-bold text-white shadow-inner"></td>
+                        <td class="py-3 text-center"><button onclick="deleteExpense(${originalIndex})" class="text-rose-500 hover:text-rose-400 transition transform hover:scale-125"><i class="fa-solid fa-circle-minus"></i></button></td>
                     </tr>`;
             });
         }
@@ -589,13 +655,15 @@
             const currentMonthStr = new Date().toISOString().slice(0, 7);
             const thisMonthExpenses = expenses.filter(e => e.date && e.date.startsWith(currentMonthStr));
             let totalSpent = 0; let totalGlobalBudget = 0; const categoryTotals = {};
-            Object.keys(categoryMap).forEach(k => { categoryTotals[k] = 0; totalGlobalBudget += parseFloat(budget[k]) || 0; });
+            
+            Object.keys(categoryMap).forEach(k => { 
+                if (categoryMap[k].showInBudget) { categoryTotals[k] = 0; totalGlobalBudget += parseFloat(budget[k]) || 0; }
+            });
 
             thisMonthExpenses.forEach(exp => {
-                if (exp.flowType === 'OUT') {
-                    const amt = parseFloat(exp.amount) || 0; totalSpent += amt;
-                    if (categoryTotals[exp.category] !== undefined) categoryTotals[exp.category] += amt;
-                    else categoryTotals['OTHER'] += amt;
+                if (exp.flowType === 'OUT' && categoryMap[exp.category] && categoryMap[exp.category].showInBudget) {
+                    const amt = parseFloat(exp.amount) || 0; 
+                    totalSpent += amt; categoryTotals[exp.category] += amt;
                 }
             });
 
@@ -617,6 +685,8 @@
             const catListContainer = document.getElementById('category-breakdown-list'); catListContainer.innerHTML = '';
             
             Object.keys(categoryMap).forEach(key => {
+                if (!categoryMap[key].showInBudget) return; 
+                
                 const catSpent = categoryTotals[key] || 0; const catBudget = budget[key] || 0; const mapInfo = categoryMap[key];
                 const catPct = catBudget > 0 ? (catSpent / catBudget) * 100 : (catSpent > 0 ? 100 : 0);
                 let miniBarColor = 'bg-emerald-400'; if (catPct >= 75) miniBarColor = 'bg-amber-400'; if (catPct >= 100) miniBarColor = 'bg-rose-500 warning-pulse';
@@ -638,20 +708,92 @@
         }
 
         function updateCategoryBudget(categoryKey, val) { budget[categoryKey] = parseCleanNumber(val); saveAndEncryptData(); updateDashboard(); }
+        
+        // 🌟 帳戶修改：如果修改帳戶名稱，同步連動所有記帳紀錄的名稱！
         function updateAccountField(index, field, val) { 
-            if (field === 'statementDay') accounts[index][field] = parseInt(val) || 15;
-            else accounts[index][field] = (field === 'balance' || field === 'limit') ? parseCleanNumber(val) : val; 
+            if (field === 'statementDay') {
+                accounts[index][field] = parseInt(val) || 15;
+            } else if (field === 'name') {
+                const oldName = accounts[index].name;
+                accounts[index].name = val;
+                // 全域聯動修改關聯記帳
+                expenses.forEach(exp => {
+                    if (exp.paymentMethod === oldName) exp.paymentMethod = val;
+                    if (exp.transferTo === oldName) exp.transferTo = val;
+                });
+            } else {
+                accounts[index][field] = (field === 'balance' || field === 'limit') ? parseCleanNumber(val) : val; 
+            }
             saveAndEncryptData(); updateDashboard(); 
         }
-        function updateStockField(index, field, val) { stocks[index][field] = (field === 'shares' || field === 'cost' || field === 'current') ? parseCleanNumber(val) : val; saveAndEncryptData(); updateDashboard(); }
-        function updateExpenseField(index, field, val) { expenses[index][field] = (field === 'amount') ? parseCleanNumber(val) : val; saveAndEncryptData(); updateDashboard(); }
 
+        // 🌟 最強連動核心：擷取變更並自動計算帳戶餘額
+        function updateExpenseField(index, field, val) { 
+            // 1. 先反向扣除「舊紀錄」的影響 (把帳戶餘額還原)
+            const oldExp = expenses[index];
+            applyTransactionToAccount(oldExp.flowType, oldExp.amount, oldExp.paymentMethod, oldExp.transferTo, true);
+
+            // 2. 更新欄位值
+            if (field === 'amount') {
+                expenses[index][field] = parseCleanNumber(val);
+            } else if (field === 'flowType') {
+                expenses[index].flowType = val;
+                if (val === 'TRANSFER') {
+                    expenses[index].payGroup = 'TRANSFER';
+                    expenses[index].category = 'OTHER';
+                    // 預設抓取選項
+                    const allAccs = accounts.map(a => a.name);
+                    expenses[index].paymentMethod = allAccs[0] || '';
+                    expenses[index].transferTo = allAccs.length > 1 ? allAccs[1] : '';
+                } else {
+                    expenses[index].payGroup = 'CASH';
+                    expenses[index].category = 'FOOD';
+                    const cashAccs = accounts.filter(a => a.type === 'CASH' && (a.name.includes('現金') || a.name.toUpperCase().includes('CASH'))).map(a => a.name);
+                    expenses[index].paymentMethod = cashAccs[0] || '';
+                }
+            } else if (field === 'payGroup') {
+                expenses[index].payGroup = val;
+                let opts = [];
+                if (val === 'CASH') opts = accounts.filter(a => a.type === 'CASH' && (a.name.includes('現金') || a.name.toUpperCase().includes('CASH'))).map(a => a.name);
+                else if (val === 'CREDIT') opts = accounts.filter(a => a.type === 'CREDIT_CARD').map(a => a.name);
+                else opts = accounts.filter(a => a.type === 'CASH' && !a.name.includes('現金') && !a.name.toUpperCase().includes('CASH')).map(a => a.name);
+                expenses[index].paymentMethod = opts.length > 0 ? opts[0] : '';
+            } else {
+                expenses[index][field] = val;
+            }
+
+            // 3. 正向套用「新紀錄」的影響 (即時扣除帳戶餘額)
+            const newExp = expenses[index];
+            applyTransactionToAccount(newExp.flowType, newExp.amount, newExp.paymentMethod, newExp.transferTo, false);
+
+            saveAndEncryptData(); updateDashboard(); 
+        }
+
+        function addNewExpenseRow() { 
+            const today = new Date().toISOString().split('T')[0]; 
+            let defaultCashOptions = accounts.filter(a => a.type === 'CASH' && (a.name.includes('現金') || a.name.toUpperCase().includes('CASH'))).map(a => a.name);
+            let defaultPayment = defaultCashOptions.length > 0 ? defaultCashOptions[0] : '';
+            
+            // 加入時金額為 0，對帳戶無影響。等使用者輸入金額時，updateExpenseField 會自動扣款
+            expenses.push({ id: Date.now(), date: today, flowType: 'OUT', category: 'FOOD', payGroup: 'CASH', paymentMethod: defaultPayment, transferTo: '', desc: '', amount: 0 }); 
+            saveAndEncryptData(); updateDashboard(); 
+        }
+
+        function deleteExpense(index) { 
+            if (confirm('確定刪除這筆紀錄嗎？\n(系統將會自動將此筆款項退回/扣除您的對應帳戶餘額)')) { 
+                const oldExp = expenses[index];
+                // 刪除前，先將此筆紀錄對帳戶的影響反向還原
+                applyTransactionToAccount(oldExp.flowType, oldExp.amount, oldExp.paymentMethod, oldExp.transferTo, true);
+                expenses.splice(index, 1); 
+                saveAndEncryptData(); updateDashboard(); 
+            } 
+        }
+
+        function updateStockField(index, field, val) { stocks[index][field] = (field === 'shares' || field === 'cost' || field === 'current') ? parseCleanNumber(val) : val; saveAndEncryptData(); updateDashboard(); }
         function addNewAccountRow() { accounts.push({ id: Date.now(), institution: 'NEW', name: '新帳戶', type: 'CASH', currency: 'HKD', balance: 0, limit: 0, statementDay: 15 }); saveAndEncryptData(); updateDashboard(); }
         function addNewStockRow() { stocks.push({ id: Date.now(), institution: 'FUTU', code: '0000.HK', shares: 0, cost: 0, current: 0 }); saveAndEncryptData(); updateDashboard(); }
-        function addNewExpenseRow() { const today = new Date().toISOString().split('T')[0]; expenses.push({ id: Date.now(), date: today, flowType: 'OUT', category: 'FOOD', paymentMethod: '現金', desc: '', amount: 0 }); saveAndEncryptData(); updateDashboard(); }
         function deleteAccount(index) { if(confirm('確定刪除此帳戶嗎？')) { accounts.splice(index, 1); saveAndEncryptData(); updateDashboard(); } }
         function deleteStock(index) { if(confirm('確定刪除此持股嗎？')) { stocks.splice(index, 1); saveAndEncryptData(); updateDashboard(); } }
-        function deleteExpense(index) { if (confirm('確定刪除這筆紀錄嗎？')) { expenses.splice(index, 1); saveAndEncryptData(); updateDashboard(); } }
 
         function renderStocksTable() {
             const tbody = document.getElementById('stocks-table-body'); tbody.innerHTML = '';
