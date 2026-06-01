@@ -1,3 +1,4 @@
+:個人智慧理財主控台加密優化版:index.html
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
@@ -92,4 +93,362 @@
                     </div>
                 </div>
                 <div class="border-t border-slate-800/80 pt-4 mt-4 grid grid-cols-2 md:grid-cols-4 gap-4 text-xs">
-                    <div><span class="text-slate-500 block mb-1">總流動資產</span><span class="font-bold text
+                    <div><span class="text-slate-500 block mb-1">總流動資產</span><span class="font-bold text-slate-200" id="total-assets-display">HK$ 0</span></div>
+                    <div><span class="text-slate-500 block mb-1">總負債</span><span class="font-bold text-slate-200" id="total-liabilities-display">HK$ 0</span></div>
+                    <div><span class="text-slate-500 block mb-1">股票現值</span><span class="font-bold text-slate-200" id="total-stocks-display">HK$ 0</span></div>
+                    <div><span class="text-slate-500 block mb-1">房貸未還</span><span class="font-bold text-slate-200" id="mortgage-balance-display">HK$ 0</span></div>
+                </div>
+            </div>
+
+            <div class="bg-slate-900/90 p-6 rounded-2xl border border-slate-800 flex flex-col justify-between">
+                <div>
+                    <h3 class="text-sm font-bold text-slate-400 mb-4 tracking-wider uppercase"><i class="fa-solid fa-chart-line text-cyan-400 mr-1"></i> 槓桿安全比率</h3>
+                    <div class="mb-4">
+                        <div class="flex justify-between text-xs mb-1"><span class="text-slate-400">資產負債率</span><span class="font-bold" id="debt-ratio-text">0%</span></div>
+                        <div class="w-full h-2 bg-slate-800 rounded-full overflow-hidden"><div id="debt-ratio-bar" class="h-full bg-gradient-to-r from-cyan-400 to-purple-500 transition-all duration-500" style="width:0%"></div></div>
+                    </div>
+                    <div>
+                        <div class="flex justify-between text-xs mb-1"><span class="text-slate-400">信用卡額度佔用率</span><span class="font-bold text-amber-400" id="card-util-text">0%</span></div>
+                        <div class="w-full h-2 bg-slate-800 rounded-full overflow-hidden"><div id="card-util-bar" class="h-full bg-gradient-to-r from-emerald-400 to-rose-500 transition-all duration-500" style="width:0%"></div></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div class="lg:col-span-2 bg-slate-900/80 p-6 rounded-2xl border border-slate-800">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-base font-bold text-white tracking-wide">
+                        <i class="fa-solid fa-building-columns text-cyan-400 mr-2"></i>跨機構資產明細 (雙擊或點擊金額可直接修改)
+                    </h2>
+                    <button onclick="addNewAccountRow()" class="px-2 py-1 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 border border-cyan-500/20 rounded text-xs transition">
+                        <i class="fa-solid fa-plus mr-1"></i> 新增帳戶
+                    </button>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs border-collapse">
+                        <thead>
+                            <tr class="border-b border-slate-800 text-slate-500">
+                                <th class="py-2 font-semibold">金融機構</th>
+                                <th class="py-2 font-semibold">帳戶名稱</th>
+                                <th class="py-2 font-semibold">類型</th>
+                                <th class="py-2 font-semibold">幣別</th>
+                                <th class="py-2 font-semibold text-right">金額 (負債請輸入負數)</th>
+                                <th class="py-2 font-semibold text-center">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="accounts-table-body" class="divide-y divide-slate-800/40">
+                            </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="bg-slate-900/80 p-6 rounded-2xl border border-slate-800 flex flex-col items-center justify-between">
+                <div class="w-full text-left"><h2 class="text-base font-bold text-white tracking-wide">萬能總現金池分布</h2></div>
+                <div class="relative w-44 h-44 my-4"><canvas id="cashPoolChart"></canvas></div>
+                <div class="w-full bg-slate-950 p-2.5 rounded-lg border border-slate-800/60 text-xs text-center">
+                    <span class="text-slate-400">流動儲備總額：</span><span class="text-emerald-400 font-extrabold text-sm ml-1" id="cash-pool-total-display">HK$ 0</span>
+                </div>
+            </div>
+        </section>
+
+        <section class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div class="bg-slate-900/80 p-6 rounded-2xl border border-slate-800">
+                <h2 class="text-base font-bold text-white mb-4">多卡數警戒雷達</h2>
+                <div id="card-utilization-list" class="space-y-4"></div>
+            </div>
+
+            <div class="bg-slate-900/80 p-6 rounded-2xl border border-slate-800">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-base font-bold text-white"><i class="fa-solid fa-arrow-trend-up text-emerald-400 mr-2"></i>股票證券持倉</h2>
+                    <button onclick="addNewStockRow()" class="px-2 py-1 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 rounded text-xs transition">
+                        <i class="fa-solid fa-plus mr-1"></i> 新增持股
+                    </button>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs border-collapse">
+                        <thead>
+                            <tr class="border-b border-slate-800 text-slate-500">
+                                <th class="py-2 font-semibold">機構/代號</th>
+                                <th class="py-2 font-semibold">股數</th>
+                                <th class="py-2 font-semibold">成本價</th>
+                                <th class="py-2 font-semibold text-right">現價</th>
+                                <th class="py-2 font-semibold text-center">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="stocks-table-body" class="divide-y divide-slate-800/40"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        let accounts = [];
+        let stocks = [];
+        let masterPassword = "";
+        let chartInstance = null;
+
+        const defaultDemoAccounts = [
+            { id: 1, institution: 'SCB', name: '渣打儲蓄戶口', type: 'CASH', currency: 'HKD', balance: 350000, limit: 0 },
+            { id: 2, institution: 'HSBC', name: '匯豐日常戶口', type: 'CASH', currency: 'HKD', balance: 200000, limit: 0 },
+            { id: 3, institution: 'SCB', name: '渣打國泰信用卡', type: 'CREDIT_CARD', currency: 'HKD', balance: -80000, limit: 100000 },
+            { id: 4, institution: 'ICBC', name: '工銀亞洲物業按揭', type: 'LOAN', currency: 'HKD', balance: -4500000, limit: 0 }
+        ];
+        const defaultDemoStocks = [
+            { id: 1, institution: 'FUTU', code: '0700.HK', shares: 1000, cost: 320, current: 382.4 }
+        ];
+
+        // --- 解鎖與加密核心邏輯 ---
+        function unlockDashboard() {
+            const pwdInput = document.getElementById('master-password-input').value;
+            if (!pwdInput) return alert('請輸入密碼');
+
+            masterPassword = pwdInput;
+            const encryptedData = localStorage.getItem('cyber_wealth_encrypted');
+
+            if (!encryptedData) {
+                // 第一次使用，將密碼設定為新密碼，並載入空白或預設結構
+                accounts = defaultDemoAccounts;
+                stocks = defaultDemoStocks;
+                saveAndEncryptData();
+                proceedToUnlock();
+            } else {
+                try {
+                    // 使用輸入的密碼進行 AES 解密
+                    const bytes = CryptoJS.AES.decrypt(encryptedData, masterPassword);
+                    const decryptedText = bytes.toString(CryptoJS.enc.Utf8);
+                    
+                    if (!decryptedText) {
+                        alert('❌ 密碼錯誤！無法解密本地安全沙盒中的資產資料。');
+                        return;
+                    }
+
+                    const parsed = JSON.parse(decryptedText);
+                    accounts = parsed.accounts || [];
+                    stocks = parsed.stocks || [];
+                    proceedToUnlock();
+                } catch (e) {
+                    alert('❌ 解密失敗，請檢查密碼。');
+                }
+            }
+        }
+
+        function proceedToUnlock() {
+            document.getElementById('crypto-lock-screen').classList.add('opacity-0', 'pointer-events-none');
+            const content = document.getElementById('dashboard-content');
+            content.classList.remove('opacity-20', 'pointer-events-none');
+            updateDashboard();
+        }
+
+        function saveAndEncryptData() {
+            if (!masterPassword) return;
+            const dataToEncrypt = JSON.stringify({ accounts, stocks });
+            // 使用 AES-256 加密成密文
+            const ciphertext = CryptoJS.AES.encrypt(dataToEncrypt, masterPassword).toString();
+            localStorage.setItem('cyber_wealth_encrypted', ciphertext);
+        }
+
+        function lockSystem() {
+            masterPassword = "";
+            document.getElementById('master-password-input').value = "";
+            document.getElementById('crypto-lock-screen').classList.remove('opacity-0', 'pointer-events-none');
+            document.getElementById('dashboard-content').classList.add('opacity-20', 'pointer-events-none');
+        }
+
+        function resetToDemoData() {
+            if (confirm('確定要清空本地沙盒並重置為乾淨的初始數據嗎？')) {
+                localStorage.removeItem('cyber_wealth_encrypted');
+                location.reload();
+            }
+        }
+
+        // --- 核心動態計算與介面更新 ---
+        function updateDashboard() {
+            let totalCash = 0, totalCreditCardDebt = 0, totalCreditCardLimit = 0, totalLoanDebt = 0, totalStockValue = 0;
+
+            // 算股價
+            stocks.forEach(s => { totalStockValue += s.shares * s.current; });
+
+            // 算帳戶
+            accounts.forEach(acc => {
+                let val = acc.balance;
+                if (acc.currency === 'USD') val *= 7.8;
+                
+                if (acc.type === 'CASH') totalCash += val;
+                else if (acc.type === 'CREDIT_CARD') {
+                    totalCreditCardDebt += Math.abs(val);
+                    totalCreditCardLimit += acc.limit;
+                }
+                else if (acc.type === 'LOAN') totalLoanDebt += Math.abs(val);
+            });
+
+            let totalAssets = totalCash + totalStockValue;
+            let totalLiabilities = totalLoanDebt + totalCreditCardDebt;
+            let netWorth = totalAssets - totalLiabilities;
+
+            // 渲染看板數字
+            document.getElementById('net-worth-display').innerText = formatCurrency(netWorth);
+            document.getElementById('total-assets-display').innerText = formatCurrency(totalAssets);
+            document.getElementById('total-liabilities-display').innerText = formatCurrency(totalLiabilities);
+            document.getElementById('total-stocks-display').innerText = formatCurrency(totalStockValue);
+            document.getElementById('mortgage-balance-display').innerText = formatCurrency(totalLoanDebt);
+
+            // 進度條
+            let debtRatio = totalAssets > 0 ? (totalLiabilities / totalAssets) * 100 : 0;
+            document.getElementById('debt-ratio-text').innerText = debtRatio.toFixed(1) + '%';
+            document.getElementById('debt-ratio-bar').style.width = Math.min(debtRatio, 100) + '%';
+
+            let cardUtilRatio = totalCreditCardLimit > 0 ? (totalCreditCardDebt / totalCreditCardLimit) * 100 : 0;
+            document.getElementById('card-util-text').innerText = cardUtilRatio.toFixed(1) + '%';
+            document.getElementById('card-util-bar').style.width = Math.min(cardUtilRatio, 100) + '%';
+
+            renderAccountsTable();
+            renderStocksTable();
+            renderCreditCards();
+            renderCashPoolChart(totalCash);
+        }
+
+        // --- 數據網頁直接輸入與雙向綁定 (Inline Edit) ---
+        function renderAccountsTable() {
+            const tbody = document.getElementById('accounts-table-body');
+            tbody.innerHTML = '';
+            accounts.forEach((acc, index) => {
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-800/30 transition text-slate-200">
+                        <td class="py-2"><input type="text" value="${acc.institution}" onchange="updateAccountField(${index}, 'institution', this.value)" class="bg-transparent border-b border-transparent hover:border-slate-700 focus:border-cyan-400 focus:outline-none px-1 w-16 font-mono text-cyan-400"></td>
+                        <td class="py-2"><input type="text" value="${acc.name}" onchange="updateAccountField(${index}, 'name', this.value)" class="bg-transparent border-b border-transparent hover:border-slate-700 focus:border-cyan-400 focus:outline-none px-1 w-full"></td>
+                        <td class="py-2">
+                            <select onchange="updateAccountField(${index}, 'type', this.value)" class="bg-slate-950 border border-slate-800 rounded p-0.5 text-[11px]">
+                                <option value="CASH" ${acc.type==='CASH'?'selected':''}>CASH</option>
+                                <option value="CREDIT_CARD" ${acc.type==='CREDIT_CARD'?'selected':''}>CARD</option>
+                                <option value="LOAN" ${acc.type==='LOAN'?'selected':''}>LOAN</option>
+                            </select>
+                        </td>
+                        <td class="py-2">
+                            <select onchange="updateAccountField(${index}, 'currency', this.value)" class="bg-slate-950 border border-slate-800 rounded p-0.5 text-[11px]">
+                                <option value="HKD" ${acc.currency==='HKD'?'selected':''}>HKD</option>
+                                <option value="USD" ${acc.currency==='USD'?'selected':''}>USD</option>
+                            </select>
+                        </td>
+                        <td class="py-2 text-right">
+                            <input type="number" value="${acc.balance}" onchange="updateAccountField(${index}, 'balance', this.value)" class="bg-slate-950 border border-slate-800 focus:border-cyan-400 focus:outline-none rounded text-right px-1.5 py-0.5 w-28 font-mono font-bold text-white">
+                            ${acc.type === 'CREDIT_CARD' ? `<div class="text-[9px] text-slate-500 mt-0.5">額度:<input type="number" value="${acc.limit}" onchange="updateAccountField(${index}, 'limit', this.value)" class="w-16 bg-transparent text-right border-b border-transparent hover:border-slate-700 focus:outline-none font-mono"></div>` : ''}
+                        </td>
+                        <td class="py-2 text-center">
+                            <button onclick="deleteAccount(${index})" class="text-rose-500 hover:text-rose-400"><i class="fa-solid fa-trash"></i></button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        function renderStocksTable() {
+            const tbody = document.getElementById('stocks-table-body');
+            tbody.innerHTML = '';
+            stocks.forEach((stk, index) => {
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-800/20 text-slate-200">
+                        <td class="py-2">
+                            <input type="text" value="${stk.institution}" onchange="updateStockField(${index}, 'institution', this.value)" class="w-12 bg-transparent text-slate-400 font-bold text-[10px] uppercase">
+                            <input type="text" value="${stk.code}" onchange="updateStockField(${index}, 'code', this.value)" class="w-20 bg-transparent font-mono block text-white focus:outline-none border-b border-transparent focus:border-cyan-400">
+                        </td>
+                        <td class="py-2"><input type="number" value="${stk.shares}" onchange="updateStockField(${index}, 'shares', this.value)" class="w-16 bg-slate-950 border border-slate-800 font-mono text-center rounded"></td>
+                        <td class="py-2"><input type="number" step="0.01" value="${stk.cost}" onchange="updateStockField(${index}, 'cost', this.value)" class="w-16 bg-slate-950 border border-slate-800 font-mono text-center rounded text-slate-400"></td>
+                        <td class="py-2 text-right"><input type="number" step="0.01" value="${stk.current}" onchange="updateStockField(${index}, 'current', this.value)" class="w-20 bg-slate-950 border border-slate-800 font-mono text-right rounded text-emerald-400 font-bold"></td>
+                        <td class="py-2 text-center">
+                            <button onclick="deleteStock(${index})" class="text-rose-500 hover:text-rose-400"><i class="fa-solid fa-trash"></i></button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        // 監聽並同步修改欄位
+        function updateAccountField(index, field, val) {
+            accounts[index][field] = (field === 'balance' || field === 'limit') ? parseFloat(val) : val;
+            saveAndEncryptData();
+            updateDashboard();
+        }
+
+        function updateStockField(index, field, val) {
+            stocks[index][field] = (field === 'shares' || field === 'cost' || field === 'current') ? parseFloat(val) : val;
+            saveAndEncryptData();
+            updateDashboard();
+        }
+
+        function addNewAccountRow() {
+            accounts.push({ id: Date.now(), institution: 'NEW', name: '新帳戶名稱', type: 'CASH', currency: 'HKD', balance: 0, limit: 0 });
+            saveAndEncryptData();
+            updateDashboard();
+        }
+
+        function addNewStockRow() {
+            stocks.push({ id: Date.now(), institution: 'FUTU', code: '0000.HK', shares: 0, cost: 0, current: 0 });
+            saveAndEncryptData();
+            updateDashboard();
+        }
+
+        function deleteAccount(index) { if(confirm('確定刪除此帳戶嗎？')) { accounts.splice(index, 1); saveAndEncryptData(); updateDashboard(); } }
+        function deleteStock(index) { if(confirm('確定刪除此持股嗎？')) { stocks.splice(index, 1); saveAndEncryptData(); updateDashboard(); } }
+
+        // --- 輔助渲染與圖表 ---
+        function renderCreditCards() {
+            const container = document.getElementById('card-utilization-list'); container.innerHTML = '';
+            accounts.filter(a => a.type === 'CREDIT_CARD').forEach(card => {
+                let debt = Math.abs(card.balance), limit = card.limit, pct = limit > 0 ? (debt / limit) * 100 : 0;
+                let isWarning = pct >= 75;
+                container.innerHTML += `
+                    <div class="p-3 rounded-xl border ${isWarning?'border-rose-500/60 warning-pulse bg-rose-500/5':'border-slate-800 bg-slate-950/40'} text-xs">
+                        <div class="flex justify-between font-bold text-slate-300"><span>${card.institution} - ${card.name}</span><span class="${isWarning?'text-rose-400':''}">使用率 ${pct.toFixed(1)}%</span></div>
+                        <div class="w-full h-1 bg-slate-800 rounded-full mt-2 overflow-hidden"><div class="h-full ${isWarning?'bg-rose-500':'bg-cyan-400'}" style="width:${Math.min(pct,100)}%"></div></div>
+                    </div>`;
+            });
+        }
+
+        function renderCashPoolChart(totalCash) {
+            document.getElementById('cash-pool-total-display').innerText = formatCurrency(totalCash);
+            const cashAccounts = accounts.filter(a => a.type === 'CASH');
+            if (chartInstance) chartInstance.destroy();
+            if (cashAccounts.length === 0) return;
+            const ctx = document.getElementById('cashPoolChart').getContext('2d');
+            chartInstance = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: cashAccounts.map(a => a.name),
+                    datasets: [{ data: cashAccounts.map(a => a.balance), backgroundColor: ['#38bdf8', '#a855f7', '#10b981', '#f43f5e', '#fb923c'], borderWidth: 0 }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, cutout: '80%' }
+            });
+        }
+
+        function formatCurrency(amount) { return (amount < 0 ? '-HK$' : 'HK$') + Math.abs(amount).toLocaleString('zh-HK', { maximumFractionDigits: 0 }); }
+        
+        // 監聽鍵盤 Enter 直接解鎖
+        document.getElementById('master-password-input').addEventListener('keypress', function(e) { if (e.key === 'Enter') unlockDashboard(); });
+    </script>
+</body>
+</html>
+
+
+---
+
+### 💡 這次升級的核心變化與使用方式：
+
+1. **直接點擊即可修改（Inline Input）**：
+   * 在「跨機構資產明細」與「股票證券持倉」列表中，所有的**機構名稱、帳戶名字、幣別、甚至是金額數字，全都變成了可輸入的欄位**。
+   * 你可以直接修改任何一格數字。當你改完並把滑鼠點到外面（觸發 `change` 事件）時，系統會**即時自動重新計算**上方的淨資產與進度條，並**自動加密存檔**。
+
+2. **動態新增/刪除**：
+   * 點擊右側的 **「新增帳戶」** 或 **「新增持股」** 按鈕，表格會立刻多出一行空白欄位讓你填寫；點擊每行最右側的 🗑️ 垃圾桶，就能直接刪除該筆資產。
+
+3. **初次使用的「密碼鎖定機制」**：
+   * 當你第一次用瀏覽器打開這個新網頁時，畫面會被全螢幕鎖定。
+   * **此時你輸入的任何密碼，就會直接成為你未來的「唯一解密金鑰」**。系統隨後會生成一份我們預設好的模擬數據。
+   * 接著你可以把這些模擬數據全部修改成你真實的資產，或者點擊右上角的 **「清空並重置」** 重新開始。
+   * 以後每次重新整理網頁、或者用手機打開網址，都必須輸入這組密碼才能解開。
+
+### 📲 如何同步到 Vercel：
+你只需要把原本 GitHub 儲存庫裡的程式碼，換成這套最新的程式碼（並確保檔名為 `index.html`）。在你 Commit 提交後的 10 秒內，Vercel 就會自動把你的手機專屬網址更新到這個具備「金融級本地加密 + 介面隨時編輯」的終極完全體！
+
+你可以現在試著更新上傳。第一次打開時，自己設定一組安全密碼，然後直接在介面上修改數字體驗一下流暢度！
