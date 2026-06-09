@@ -50,6 +50,12 @@
             <button type="button" id="login-btn" onclick="login()" class="w-full py-4 bg-cyan-600 hover:bg-cyan-500 text-white font-black rounded-xl transition shadow-lg mb-2">進入主控台</button>
             <p id="lock-msg" class="text-rose-500 text-xs font-bold hidden"></p>
             <p id="login-status" class="text-[10px] text-slate-600 mt-1"></p>
+            <button type="button" onclick="toggleBackupCodePanel()" class="mt-3 text-[10px] text-cyan-400/90 hover:text-cyan-300 underline">📋 手機同步：貼上備份碼</button>
+            <div id="backup-code-panel" class="hidden mt-3 text-left">
+                <p class="text-[9px] text-slate-500 mb-1">在電腦按「複製備份碼」，再貼到下面（仍需輸入密碼解鎖）</p>
+                <textarea id="backup-code-input" rows="4" placeholder="貼上 CW4: 開頭的備份碼…" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-[10px] font-mono text-slate-300 outline-none focus:border-cyan-500"></textarea>
+                <button type="button" onclick="importBackupCode()" class="mt-2 w-full py-2 bg-slate-800 hover:bg-slate-700 text-cyan-300 text-xs font-bold rounded-lg">匯入備份碼</button>
+            </div>
             <p class="text-[10px] text-slate-600 mt-3">🔒 資料以 AES 加密儲存於本機，密碼不會寫入程式碼</p>
         </div>
     </div>
@@ -63,8 +69,9 @@
             </div>
             <div class="flex flex-wrap gap-2 items-center">
                 <span id="backup-hint" class="text-[10px] text-amber-400/80 hidden"></span>
-                <button onclick="exportBackup()" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-xs font-bold"><i class="fa-solid fa-download text-cyan-400"></i> 匯出備份</button>
-                <button onclick="document.getElementById('import-file').click()" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-xs font-bold"><i class="fa-solid fa-upload text-emerald-400"></i> 匯入備份</button>
+                <button onclick="exportBackup()" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-xs font-bold"><i class="fa-solid fa-download text-cyan-400"></i> 下載備份</button>
+                <button onclick="exportBackupCode()" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-xs font-bold"><i class="fa-solid fa-copy text-purple-400"></i> 複製備份碼</button>
+                <button onclick="document.getElementById('import-file').click()" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-xs font-bold"><i class="fa-solid fa-upload text-emerald-400"></i> 匯入檔案</button>
                 <input type="file" id="import-file" class="hidden" accept=".json,.cwbackup" onchange="importBackup(this)">
                 <button onclick="lock()" class="px-3 py-2 bg-slate-800 rounded-lg text-xs font-bold"><i class="fa-solid fa-lock text-rose-400"></i> 鎖定</button>
             </div>
@@ -258,8 +265,58 @@
         function updateBackupHint(){let el=document.getElementById('backup-hint'),l=lsGet('cw_last_backup');if(!l){el.classList.add('hidden');return}el.classList.remove('hidden');el.innerText='上次備份：'+l.slice(0,10)}
         function checkBackupReminder(){let l=lsGet('cw_last_backup');if(!l){setTimeout(()=>{if(confirm('建議立即匯出第一份加密備份。現在匯出？'))exportBackup()},800);return}if((Date.now()-new Date(l).getTime())/86400000>=BACKUP_DAYS)setTimeout(()=>{if(confirm(`已超過 ${BACKUP_DAYS} 天未備份，建議現在匯出。`))exportBackup()},800)}
 
-        function exportBackup(){if(!masterPwd)return alert('請先解鎖');saveVault();let p={app:'CyberWealth',version:4,encrypted:true,exportedAt:new Date().toISOString(),data:lsGet(VAULT_KEY)};let a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(p,null,2)]));a.download='cyberwealth-backup-'+new Date().toISOString().slice(0,10)+'.cwbackup.json';a.click();URL.revokeObjectURL(a.href);lsSet('cw_last_backup',new Date().toISOString());updateBackupHint();alert('加密備份已下載，請存到 iCloud / Google Drive。')}
-        function importBackup(input){let f=input.files[0];if(!f)return;let rd=new FileReader();rd.onload=e=>{try{let p=JSON.parse(e.target.result),c=p.data||p;if(typeof c!=='string')throw new Error('格式錯誤');if(hasVault()&&masterPwd&&!decryptData(masterPwd,c)&&!confirm('備份密碼可能不同，仍要覆蓋？')){input.value='';return}else if(!hasVault()&&!confirm('匯入備份將覆蓋本機資料，確定？')){input.value='';return}lsSet(VAULT_KEY,c);masterPwd='';lock();alert('備份已匯入，請用備份時的密碼登入。')}catch(err){alert('匯入失敗：'+err.message)}input.value=''};rd.readAsText(f)}
+        function toBackupCode(cipher){
+            let payload={v:4,d:cipher,t:Date.now()};
+            return 'CW4:'+btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
+        }
+        function fromBackupCode(raw){
+            let code=(raw||'').trim().replace(/\s+/g,'');
+            if(!code)throw new Error('請貼上備份碼');
+            if(code.startsWith('{')){let p=JSON.parse(code);let c=p.data||p.d||p;if(typeof c!=='string')throw new Error('格式錯誤');return c}
+            if(code.startsWith('CW4:'))code=code.slice(4);
+            let p=JSON.parse(decodeURIComponent(escape(atob(code))));
+            let c=p.d||p.data;if(typeof c!=='string')throw new Error('格式錯誤');return c;
+        }
+        function applyImportedVault(c){
+            if(hasVault()&&masterPwd&&!decryptData(masterPwd,c)){
+                if(!confirm('此備份與目前密碼不符，仍要覆蓋本機資料嗎？'))return false;
+            }else if(hasVault()&&!confirm('匯入將覆蓋本機資料，確定？'))return false;
+            lsSet(VAULT_KEY,c);masterPwd='';lock();alert('備份已匯入！請用當初設定備份時的密碼登入。');return true;
+        }
+        function exportBackup(){
+            if(!masterPwd)return alert('請先解鎖');
+            saveVault();
+            let p={app:'CyberWealth',version:4,encrypted:true,exportedAt:new Date().toISOString(),data:lsGet(VAULT_KEY)};
+            let a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(p,null,2)]));
+            a.download='cyberwealth-backup-'+new Date().toISOString().slice(0,10)+'.cwbackup.json';a.click();URL.revokeObjectURL(a.href);
+            lsSet('cw_last_backup',new Date().toISOString());updateBackupHint();
+            alert('加密備份檔已下載。手機同步建議再用「複製備份碼」。');
+        }
+        function exportBackupCode(){
+            if(!masterPwd)return alert('請先解鎖');
+            saveVault();
+            let code=toBackupCode(lsGet(VAULT_KEY));
+            lsSet('cw_last_backup',new Date().toISOString());updateBackupHint();
+            if(navigator.clipboard&&navigator.clipboard.writeText){
+                navigator.clipboard.writeText(code).then(()=>alert('備份碼已複製！\n\n請貼到備忘錄/iCloud/微信自己，再到手機登入頁「貼上備份碼」。\n\n仍需用密碼解鎖，備份碼唔係密碼。')).catch(()=>showBackupCodeDialog(code));
+            }else showBackupCodeDialog(code);
+        }
+        function showBackupCodeDialog(code){
+            let ta=document.createElement('textarea');ta.value=code;ta.style.cssText='width:100%;height:120px;font-size:10px;margin-top:8px';
+            let msg='長按全選並複製此備份碼，貼到手機登入頁：\n\n（仍需密碼解鎖，備份碼唔係密碼）';
+            if(confirm(msg+'\n\n按「確定」後會顯示備份碼文字框')){document.body.appendChild(ta);ta.select();try{document.execCommand('copy')}catch(e){}ta.remove();alert('請手動複製備份碼')}
+        }
+        function toggleBackupCodePanel(){document.getElementById('backup-code-panel').classList.toggle('hidden')}
+        function importBackupCode(){
+            try{
+                let raw=document.getElementById('backup-code-input').value;
+                applyImportedVault(fromBackupCode(raw));
+            }catch(err){alert('匯入失敗：'+err.message)}
+        }
+        function importBackup(input){
+            let f=input.files[0];if(!f)return;
+            let rd=new FileReader();rd.onload=e=>{try{applyImportedVault(fromBackupCode(e.target.result))}catch(err){alert('匯入失敗：'+err.message)}input.value=''};rd.readAsText(f);
+        }
 
         function lockUI(ms){let b=document.getElementById('login-btn'),i=document.getElementById('pwd-input');b.disabled=i.disabled=document.getElementById('pwd-confirm').disabled=true;i.value='';b.className="w-full py-4 bg-slate-800 text-slate-500 rounded-xl font-bold mb-2";clearInterval(timer);timer=setInterval(()=>{ms-=1000;if(ms<=0){clearInterval(timer);unlockUI()}else showLockMsg(`鎖定中，請等 ${Math.floor(ms/60000)}分 ${Math.floor((ms/1000)%60)}秒`,true)},1000)}
         function unlockUI(){let b=document.getElementById('login-btn'),i=document.getElementById('pwd-input');b.disabled=i.disabled=document.getElementById('pwd-confirm').disabled=false;b.className="w-full py-4 bg-cyan-600 hover:bg-cyan-500 text-white font-black rounded-xl transition shadow-lg mb-2";updateLockUI(false);showLockMsg('',false)}
