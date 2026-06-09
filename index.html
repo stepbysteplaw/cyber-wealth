@@ -371,10 +371,15 @@
             let h='';
             Object.keys(banks).sort().forEach(inst=>{
                 let g=banks[inst];
+                let instEsc=inst.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
                 h+=`<div class="glass rounded-xl overflow-hidden">
-                    <div class="px-3 py-2 bg-slate-800/40 border-b border-slate-700/60 flex justify-between items-center">
-                        <span class="font-semibold text-white text-xs"><i class="fa-solid fa-landmark text-cyan-400/80 mr-1.5 text-[10px]"></i>${inst}</span>
-                        <button onclick="addAccToBank('${inst.replace(/'/g,"\\'")}')" class="text-[9px] text-cyan-400/90 border border-slate-700 px-1.5 py-0.5 rounded">＋戶口</button>
+                    <div class="px-3 py-2 bg-slate-800/40 border-b border-slate-700/60 flex justify-between items-center gap-2">
+                        <div class="flex items-center gap-1.5 min-w-0 flex-1">
+                            <i class="fa-solid fa-landmark text-cyan-400/80 text-[10px] shrink-0"></i>
+                            <input value="${inst.replace(/"/g,'&quot;')}" data-old="${inst.replace(/"/g,'&quot;')}" onblur="uBankFromInput(this)" onkeydown="if(event.key==='Enter'){this.blur()}"
+                                class="fld font-semibold text-white text-xs flex-1 min-w-0 max-w-[160px]" title="點此修改銀行名稱（會更新該銀行所有戶口）">
+                        </div>
+                        <button onclick="addAccToBank('${instEsc}')" class="text-[9px] text-cyan-400/90 border border-slate-700 px-1.5 py-0.5 rounded shrink-0">＋戶口</button>
                     </div>`;
                 if(g.cash.length){h+=`<p class="px-3 pt-2 pb-0 text-[9px] font-semibold text-emerald-500/80 uppercase tracking-wide"><i class="fa-solid fa-piggy-bank mr-1"></i>存款戶口</p><div>${g.cash.map(({a,i})=>accRow(a,i)).join('')}</div>`}
                 if(g.card.length){h+=`<p class="px-3 pt-2 pb-0 text-[9px] font-semibold text-amber-500/80 uppercase tracking-wide"><i class="fa-solid fa-credit-card mr-1"></i>信用卡</p><div>${g.card.map(({a,i})=>accRow(a,i)).join('')}</div>`}
@@ -442,29 +447,24 @@
             else D.acc[i][f]=(f==='bal'||f==='lim')?pNum(v):v;
             saveDb();
         }
-        function uBank(oldName,newName){D.acc.forEach(a=>{if(a.inst===oldName)a.inst=newName});saveDb()}
-        function addAcc(){D.acc.push({id:Date.now(),inst:'新銀行',name:'新帳戶',type:'CASH',sub:'SAVINGS',cur:'HKD',bal:0,lim:0,day:15});saveDb()}
-        function addAccToBank(inst){D.acc.push({id:Date.now(),inst,name:'新戶口',type:'CASH',sub:'SAVINGS',cur:'HKD',bal:0,lim:0,day:null});saveDb()}
-        function dAcc(i){if(confirm('刪除此帳戶？')){D.acc.splice(i,1);saveDb()}}
-
-        function uExp(i,f,v){
-            let o=D.exp[i];applyBal(o.t,o.amt,o.pm,o.to,true);
-            if(f==='amt')D.exp[i][f]=pNum(v);
-            else if(f==='t'){
-                D.exp[i].t=v;
-                if(v==='TRANSFER'){D.exp[i].pg='TRANSFER';D.exp[i].cat='OTHER';D.exp[i].pm=D.acc.find(a=>a.type==='CASH')?.name||'';D.exp[i].to=D.acc.find(a=>a.type==='CARD')?.name||''}
-                else{D.exp[i].pg='CASH';D.exp[i].cat='FOOD';D.exp[i].pm=D.acc.find(a=>a.type==='CASH')?.name||'';D.exp[i].to=''}
-            }else D.exp[i][f]=v;
-            applyBal(D.exp[i].t,D.exp[i].amt,D.exp[i].pm,D.exp[i].to,false);saveDb();
+        function uBank(oldName,newName){
+            newName=(newName||'').trim();
+            if(!newName||newName===oldName)return;
+            D.acc.forEach(a=>{if(a.inst===oldName)a.inst=newName});
+            saveDb();
         }
-        function uExpPg(i,g){
-            let o=D.exp[i];applyBal(o.t,o.amt,o.pm,o.to,true);
-            D.exp[i].pg=g;D.exp[i].pm=D.acc.find(a=>g==='CARD'?a.type==='CARD':a.type==='CASH')?.name||'';
-            applyBal(D.exp[i].t,D.exp[i].amt,D.exp[i].pm,D.exp[i].to,false);saveDb();
+        function uBankFromInput(el){
+            let old=el.dataset.old||'', neu=(el.value||'').trim();
+            if(!neu){el.value=old;return}
+            if(neu!==old)uBank(old,neu);
+            el.dataset.old=neu;
         }
-        function addExp(){D.exp.unshift({id:Date.now(),date:new Date().toISOString().split('T')[0],t:'OUT',cat:'FOOD',pg:'CARD',pm:D.acc.find(a=>a.type==='CARD')?.name||D.acc.find(a=>a.type==='CASH')?.name||'',to:'',ds:'',amt:0});saveDb()}
-        function dExp(i){if(confirm('刪除並還原餘額？')){let o=D.exp[i];applyBal(o.t,o.amt,o.pm,o.to,true);D.exp.splice(i,1);saveDb()}}
-        function addStk(){D.stk.push({id:Date.now(),inst:'FUTU',code:'0000',sh:0,cost:0,cur:0});saveDb()}
-    </script>
-</body>
-</html>
+        function addAcc(){
+            let inst=prompt('請輸入銀行名稱（例如 HSBC、渣打、工銀）');
+            if(!inst)return;
+            inst=inst.trim();if(!inst)return;
+            let name=prompt('請輸入戶口名稱',inst+' 儲蓄');
+            if(name===null)return;
+            name=(name||'新戶口').trim()||'新戶口';
+            D.acc.push({id:Date.now(),inst,name,type:'CASH',sub:'SAVINGS',cur:'HKD',bal:0,lim:0,day:null});
+            saveDb();
