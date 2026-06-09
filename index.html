@@ -16,9 +16,11 @@
         .section-h{font-size:13px;font-weight:600;color:#f1f5f9}
         .amt{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;letter-spacing:-.02em}
         .amt-lg{font-size:clamp(1.25rem,4vw,1.75rem);font-weight:800;letter-spacing:-.03em}
-        .acc-row{display:flex;align-items:center;gap:8px;padding:8px 12px;border-bottom:1px solid rgba(51,65,85,.35);font-size:11px}
+        .acc-row{display:flex;align-items:center;gap:6px;padding:7px 12px;border-bottom:1px solid rgba(51,65,85,.35);font-size:11px}
         .acc-row:last-child{border-bottom:none}
-        .acc-row:hover{background:rgba(30,41,59,.25)}
+        .acc-row:hover{background:rgba(30,41,59,.2)}
+        .acc-edit{display:none;padding:6px 12px 8px;background:rgba(2,6,23,.35);border-bottom:1px solid rgba(51,65,85,.25);font-size:10px;gap:6px;flex-wrap:wrap}
+        .acc-edit.open{display:flex}
         .badge{display:inline-block;padding:1px 6px;border-radius:4px;font-size:9px;font-weight:600;background:rgba(51,65,85,.5);color:#94a3b8}
         .fld{background:rgba(2,6,23,.6);border:1px solid transparent;border-radius:4px;padding:2px 6px;font-size:11px;outline:none}
         .fld:focus{border-color:rgba(34,211,238,.4)}
@@ -330,33 +332,40 @@
             renderStk();
         }
 
+        function accLabel(a){
+            if(a.type==='CARD')return'信用卡';
+            if(a.type==='LOAN')return'貸款';
+            return SUB[a.sub]||'戶口';
+        }
+
         function accRow(a,i){
             let balCl=pNum(a.bal)<0?'text-rose-400':'text-emerald-400';
             let subOpts=a.type==='CASH'?['SAVINGS','CHECKING','FOREIGN']:a.type==='CARD'?['CARD']:['LOAN'];
-            let hkdNote=a.cur!=='HKD'?`<span class="text-[9px] text-slate-500 block">≈ ${fNum(toHKD(a.bal,a.cur))} HKD</span>`:'';
-            let cardExtra=a.type==='CARD'?`<span class="text-[9px] text-slate-500 ml-2">額<input value="${fNum(a.lim)}" onchange="uAcc(${i},'lim',this.value)" class="fld w-12 text-right">結<input value="${a.day||15}" onchange="uAcc(${i},'day',this.value)" class="fld w-7 text-right text-amber-400"></span>`:'';
+            let hkdNote=a.cur!=='HKD'?`<span class="text-[9px] text-slate-500 ml-1">≈${fNum(toHKD(a.bal,a.cur))}</span>`:'';
+            let cardFlds=a.type==='CARD'?`<label class="text-slate-500">額度<input value="${fNum(a.lim)}" onchange="uAcc(${i},'lim',this.value)" class="fld w-14 text-right ml-1">結單日<input value="${a.day||15}" onchange="uAcc(${i},'day',this.value)" class="fld w-8 text-right ml-1"></label>`:'';
             return`<div class="acc-row">
-                <div class="flex-1 min-w-0">
-                    <div class="flex items-center gap-1 flex-wrap">
-                        <input value="${a.name}" onchange="uAcc(${i},'name',this.value)" class="fld font-medium text-white max-w-[130px]" placeholder="帳戶名稱">
-                        <span class="badge">${SUB[a.sub]||'戶口'}</span>
-                        <span class="badge">${a.cur}</span>
-                    </div>
-                    <div class="flex items-center gap-1 mt-1 flex-wrap opacity-80">
-                        <input value="${a.inst}" onchange="uAcc(${i},'inst',this.value)" class="fld text-cyan-400/80 w-14" placeholder="銀行">
-                        <select onchange="uAcc(${i},'type',this.value)" class="fld"><option value="CASH" ${a.type==='CASH'?'selected':''}>存款</option><option value="CARD" ${a.type==='CARD'?'selected':''}>信用卡</option><option value="LOAN" ${a.type==='LOAN'?'selected':''}>貸款</option></select>
-                        <select onchange="uAcc(${i},'sub',this.value)" class="fld">${subOpts.map(s=>`<option value="${s}" ${a.sub===s?'selected':''}>${SUB[s]}</option>`).join('')}</select>
-                        <select onchange="uAcc(${i},'cur',this.value)" class="fld">${CURS.map(c=>`<option value="${c}" ${a.cur===c?'selected':''}>${c}</option>`).join('')}</select>
-                        ${cardExtra}
-                    </div>
+                <div class="flex-1 min-w-0 flex items-center gap-2 truncate">
+                    <span class="text-white text-xs truncate">${a.name}</span>
+                    <span class="text-[9px] text-slate-500 shrink-0">${accLabel(a)} · ${a.cur}</span>
                 </div>
-                <div class="text-right shrink-0 w-[88px]">
-                    <input value="${fNum(a.bal)}" onchange="uAcc(${i},'bal',this.value)" class="fld w-full text-right amt ${balCl}">
+                <div class="shrink-0 flex items-center gap-1">
+                    <input value="${fNum(a.bal)}" onchange="uAcc(${i},'bal',this.value)" class="fld w-[72px] text-right amt ${balCl}" title="餘額">
                     ${hkdNote}
                 </div>
+                <button type="button" onclick="toggleAccEdit(${i})" class="text-slate-500 hover:text-cyan-400 shrink-0 px-1" title="編輯帳戶設定"><i class="fa-solid fa-pen-to-square text-[10px]"></i></button>
                 <i class="fa-solid fa-trash text-slate-600 hover:text-rose-500 cursor-pointer text-[10px] shrink-0" onclick="dAcc(${i})"></i>
+            </div>
+            <div id="acc-ed-${i}" class="acc-edit">
+                <label class="text-slate-500">名稱<input value="${a.name}" onchange="uAcc(${i},'name',this.value)" class="fld ml-1 w-24"></label>
+                <label class="text-slate-500">銀行<input value="${a.inst}" onchange="uAcc(${i},'inst',this.value)" class="fld ml-1 w-16"></label>
+                <select onchange="uAcc(${i},'type',this.value)" class="fld"><option value="CASH" ${a.type==='CASH'?'selected':''}>存款</option><option value="CARD" ${a.type==='CARD'?'selected':''}>信用卡</option><option value="LOAN" ${a.type==='LOAN'?'selected':''}>貸款</option></select>
+                <select onchange="uAcc(${i},'sub',this.value)" class="fld">${subOpts.map(s=>`<option value="${s}" ${a.sub===s?'selected':''}>${SUB[s]}</option>`).join('')}</select>
+                <select onchange="uAcc(${i},'cur',this.value)" class="fld">${CURS.map(c=>`<option value="${c}" ${a.cur===c?'selected':''}>${c}</option>`).join('')}</select>
+                ${cardFlds}
             </div>`;
         }
+
+        function toggleAccEdit(i){let el=document.getElementById('acc-ed-'+i);if(el)el.classList.toggle('open')}
 
         function renderAccGroups(banks){
             let h='';
