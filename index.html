@@ -5,17 +5,40 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>理財主控台</title>
 </head>
-<body style="background:#020617; color:white; font-family: sans-serif; display:flex; justify-content:center; align-items:center; height:100vh; margin:0;">
+<body style="background:#020617; color:white; font-family: sans-serif; height:100vh; margin:0; display:flex; justify-content:center; align-items:center;">
 
-    <button onclick="document.location.href='https://你的網址?login=success'" style="padding:20px 40px; background: #06b6d4; border:none; border-radius:10px; font-weight:bold; font-size: 20px;">
-        進入理財系統
-    </button>
+    <div id="login-ui" style="text-align:center; padding:20px;">
+        <input type="password" id="pw-field" placeholder="輸入密碼" style="color:black; padding:10px; border-radius:5px; margin-bottom:10px; width:200px;">
+        <br>
+        <button onclick="login()" style="padding:10px 20px; background:#06b6d4; border:none; border-radius:5px; color:white; font-weight:bold;">
+            進入系統
+        </button>
+    </div>
+
+    <div id="main-ui" style="display:none; width:100%; padding:20px;">
+        <h1>登入成功！</h1>
+        <p>系統已連線。</p>
+    </div>
 
     <script>
-        // 如果網址包含 login=success，就直接顯示內容
-        if (window.location.search.includes('login=success')) {
-            alert('登入成功！');
-            // 在這裡載入你的 dashboard
+        function login() {
+            const input = document.getElementById('pw-field').value;
+            if (input === 'Step0926') {
+                localStorage.setItem('is_logged_in', 'true');
+                showMain();
+            } else {
+                alert('密碼錯誤');
+            }
+        }
+
+        function showMain() {
+            document.getElementById('login-ui').style.display = 'none';
+            document.getElementById('main-ui').style.display = 'block';
+        }
+
+        // 頁面載入時檢查是否已登入
+        if (localStorage.getItem('is_logged_in') === 'true') {
+            showMain();
         }
     </script>
 </body>
