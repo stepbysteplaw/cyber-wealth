@@ -468,3 +468,34 @@
             name=(name||'新戶口').trim()||'新戶口';
             D.acc.push({id:Date.now(),inst,name,type:'CASH',sub:'SAVINGS',cur:'HKD',bal:0,lim:0,day:null});
             saveDb();
+        }
+        function addAccToBank(inst){
+            let name=prompt('請輸入戶口名稱',inst+' 儲蓄');
+            if(name===null)return;
+            name=(name||'新戶口').trim()||'新戶口';
+            D.acc.push({id:Date.now(),inst,name,type:'CASH',sub:'SAVINGS',cur:'HKD',bal:0,lim:0,day:null});
+            saveDb();
+        }
+        function dAcc(i){if(confirm('刪除此帳戶？')){D.acc.splice(i,1);saveDb()}}
+
+        function uExp(i,f,v){
+            let o=D.exp[i];applyBal(o.t,o.amt,o.pm,o.to,true);
+            if(f==='amt')D.exp[i][f]=pNum(v);
+            else if(f==='t'){
+                D.exp[i].t=v;
+                if(v==='TRANSFER'){D.exp[i].pg='TRANSFER';D.exp[i].cat='OTHER';D.exp[i].pm=D.acc.find(a=>a.type==='CASH')?.name||'';D.exp[i].to=D.acc.find(a=>a.type==='CARD')?.name||''}
+                else{D.exp[i].pg='CASH';D.exp[i].cat='FOOD';D.exp[i].pm=D.acc.find(a=>a.type==='CASH')?.name||'';D.exp[i].to=''}
+            }else D.exp[i][f]=v;
+            applyBal(D.exp[i].t,D.exp[i].amt,D.exp[i].pm,D.exp[i].to,false);saveDb();
+        }
+        function uExpPg(i,g){
+            let o=D.exp[i];applyBal(o.t,o.amt,o.pm,o.to,true);
+            D.exp[i].pg=g;D.exp[i].pm=D.acc.find(a=>g==='CARD'?a.type==='CARD':a.type==='CASH')?.name||'';
+            applyBal(D.exp[i].t,D.exp[i].amt,D.exp[i].pm,D.exp[i].to,false);saveDb();
+        }
+        function addExp(){D.exp.unshift({id:Date.now(),date:new Date().toISOString().split('T')[0],t:'OUT',cat:'FOOD',pg:'CARD',pm:D.acc.find(a=>a.type==='CARD')?.name||D.acc.find(a=>a.type==='CASH')?.name||'',to:'',ds:'',amt:0});saveDb()}
+        function dExp(i){if(confirm('刪除並還原餘額？')){let o=D.exp[i];applyBal(o.t,o.amt,o.pm,o.to,true);D.exp.splice(i,1);saveDb()}}
+        function addStk(){D.stk.push({id:Date.now(),inst:'FUTU',code:'0000',sh:0,cost:0,cur:0});saveDb()}
+    </script>
+</body>
+</html>
