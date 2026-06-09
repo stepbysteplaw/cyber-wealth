@@ -2,43 +2,65 @@
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>理財主控台</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>CyberWealth - 智慧理財主控台</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background-color: #020617; color: white; font-family: sans-serif; }
+        .glass { background: rgba(15, 23, 42, 0.9); border: 1px solid rgba(255, 255, 255, 0.1); }
+    </style>
 </head>
-<body style="background:#020617; color:white; font-family: sans-serif; height:100vh; margin:0; display:flex; justify-content:center; align-items:center;">
+<body class="p-4">
 
-    <div id="login-ui" style="text-align:center; padding:20px;">
-        <input type="password" id="pw-field" placeholder="輸入密碼" style="color:black; padding:10px; border-radius:5px; margin-bottom:10px; width:200px;">
-        <br>
-        <button onclick="login()" style="padding:10px 20px; background:#06b6d4; border:none; border-radius:5px; color:white; font-weight:bold;">
-            進入系統
-        </button>
+    <div id="login-ui" class="fixed inset-0 flex items-center justify-center bg-[#020617] z-50">
+        <div class="glass p-8 rounded-3xl w-full max-w-sm text-center">
+            <h2 class="text-2xl font-bold mb-6">輸入密碼</h2>
+            <input type="password" id="pw-field" placeholder="Step0926" class="w-full bg-slate-900 border border-slate-700 p-4 rounded-xl text-center text-white mb-4 outline-none focus:border-cyan-500">
+            <button onclick="login()" class="w-full py-4 bg-cyan-600 font-bold rounded-xl text-white">進入系統</button>
+        </div>
     </div>
 
-    <div id="main-ui" style="display:none; width:100%; padding:20px;">
-        <h1>登入成功！</h1>
-        <p>系統已連線。</p>
+    <div id="main-ui" class="hidden">
+        <h1 class="text-xl font-bold mb-4">你的理財數據</h1>
+        <div id="data-display" class="bg-slate-900 p-4 rounded-xl font-mono text-sm">
+            </div>
+        <button onclick="logout()" class="mt-4 text-xs text-slate-500">登出</button>
     </div>
 
     <script>
+        const PWD = "Step0926";
+        
         function login() {
             const input = document.getElementById('pw-field').value;
-            if (input === 'Step0926') {
-                localStorage.setItem('is_logged_in', 'true');
-                showMain();
+            if (input === PWD) {
+                localStorage.setItem('logged_in', 'true');
+                showData();
             } else {
                 alert('密碼錯誤');
             }
         }
 
-        function showMain() {
+        function showData() {
             document.getElementById('login-ui').style.display = 'none';
             document.getElementById('main-ui').style.display = 'block';
+            
+            // 讀取你之前儲存的數據
+            const raw = localStorage.getItem('cyber_wealth_data_v2');
+            if (raw) {
+                document.getElementById('data-display').innerText = raw; // 暫時顯示原始資料確認讀取成功
+            } else {
+                document.getElementById('data-display').innerText = "尚未有任何資料。";
+            }
         }
 
-        // 頁面載入時檢查是否已登入
-        if (localStorage.getItem('is_logged_in') === 'true') {
-            showMain();
+        function logout() {
+            localStorage.removeItem('logged_in');
+            location.reload();
+        }
+
+        // 頁面啟動檢查
+        if (localStorage.getItem('logged_in') === 'true') {
+            showData();
         }
     </script>
 </body>
