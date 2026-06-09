@@ -2,176 +2,21 @@
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>CyberWealth - 智慧理財主控台</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script>
-        tailwind.config={theme:{extend:{fontFamily:{sans:['Inter','sans-serif'],mono:['JetBrains Mono','monospace']}}}}
-    </script>
-    <style>
-        body { background-color: #020617; -webkit-text-size-adjust: 100%; color: #cbd5e1; }
-        .glass { background: rgba(15,23,42,0.8); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.05); }
-        input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-        ::-webkit-scrollbar { width: 4px; height: 6px; }
-        ::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
-        .scroll-box { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-    </style>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>理財主控台</title>
 </head>
-<body onload="initApp()" class="p-3 md:p-6">
+<body style="background:#020617; color:white; font-family: sans-serif; display:flex; justify-content:center; align-items:center; height:100vh; margin:0;">
 
-    <div id="lock-screen" class="fixed inset-0 bg-[#020617] z-50 flex flex-col items-center justify-center p-4">
-        <div class="max-w-sm w-full glass p-8 rounded-3xl text-center shadow-2xl">
-            <i class="fa-solid fa-shield-halved text-cyan-400 text-4xl mb-4 block"></i>
-            <h2 class="text-xl font-bold text-white mb-2 tracking-widest">系統解鎖</h2>
-            <p class="text-xs text-slate-400 mb-6">錯誤 5 次將鎖定 3 分鐘</p>
-            
-            <div class="relative w-full mb-4">
-                <input type="password" id="pwd-input" placeholder="輸入密碼" onkeydown="if(event.key==='Enter') login()" 
-                       class="w-full bg-slate-900 border-2 border-slate-700 rounded-xl p-4 text-center text-white font-mono tracking-widest focus:border-cyan-400 outline-none">
-                <i class="fa-solid fa-eye absolute right-4 top-5 text-slate-500" onclick="togglePwd(this)"></i>
-            </div>
-            
-            <button id="login-btn" onclick="login()" class="w-full py-4 bg-cyan-600 hover:bg-cyan-500 text-white font-black rounded-xl transition shadow-lg mb-2">
-                進入主控台
-            </button>
-            <p id="lock-msg" class="text-rose-500 text-xs font-bold hidden"></p>
-        </div>
-    </div>
-
-    <div id="main-content" class="max-w-[1200px] w-full mx-auto hidden opacity-0 transition-opacity duration-500 space-y-6">
-        
-        <header class="flex justify-between items-center pb-4 border-b border-slate-800">
-            <div>
-                <h1 class="text-2xl font-black text-white tracking-widest"><i class="fa-solid fa-bolt text-cyan-400 mr-2"></i>CYBERWEALTH</h1>
-                <p class="text-[10px] text-emerald-400">流水帳全自動連動版</p>
-            </div>
-            <button onclick="lock()" class="px-3 py-2 bg-slate-800 rounded-lg text-xs font-bold"><i class="fa-solid fa-lock text-rose-400"></i> 鎖定</button>
-        </header>
-
-        <section class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div class="glass p-6 rounded-2xl relative overflow-hidden">
-                <span class="text-xs font-bold text-slate-400">總流動資產 (現金+股票-卡債)</span>
-                <div class="text-4xl md:text-5xl font-black text-emerald-400 font-mono my-2" id="v-liquid">HK$ 0</div>
-                <div class="grid grid-cols-2 gap-4 mt-4 pt-4 border-t border-slate-700 text-sm">
-                    <div><span class="block text-[10px] text-slate-500">現金存款</span><span id="v-cash" class="font-mono text-white font-bold">0</span></div>
-                    <div><span class="block text-[10px] text-slate-500">信用卡負債</span><span id="v-cc" class="font-mono text-rose-400 font-bold">0</span></div>
-                    <div><span class="block text-[10px] text-slate-500">股票現值</span><span id="v-stock" class="font-mono text-cyan-400 font-bold">0</span></div>
-                    <div><span class="block text-[10px] text-slate-500">按揭未還</span><span id="v-loan" class="font-mono text-slate-500 font-bold">0</span></div>
-                </div>
-            </div>
-            <div class="glass p-6 rounded-2xl flex flex-col justify-center text-sm font-mono">
-                <div class="mb-4">
-                    <div class="flex justify-between mb-1 text-xs"><span class="font-sans">總負債率</span><span id="v-dr">0%</span></div>
-                    <div class="h-2 bg-slate-800 rounded-full"><div id="v-dr-bar" class="h-full bg-blue-500"></div></div>
-                </div>
-                <div>
-                    <div class="flex justify-between mb-1 text-xs"><span class="font-sans text-amber-400">卡債額度佔用率</span><span id="v-cr" class="text-amber-400">0%</span></div>
-                    <div class="h-2 bg-slate-800 rounded-full"><div id="v-cr-bar" class="h-full bg-amber-500"></div></div>
-                </div>
-            </div>
-        </section>
-
-        <section class="glass p-4 rounded-2xl">
-            <div class="flex justify-between items-center mb-3">
-                <h2 class="font-bold text-white"><i class="fa-solid fa-receipt text-orange-400 mr-2"></i>自動連動記帳本</h2>
-                <button onclick="addExp()" class="px-3 py-1 bg-orange-500 text-black font-bold text-xs rounded">＋記一筆</button>
-            </div>
-            <div class="scroll-box max-h-[400px]">
-                <table class="w-full text-left text-xs whitespace-nowrap">
-                    <thead class="bg-slate-800 sticky top-0"><tr class="text-slate-400 *:py-2 *:px-2"><th>日期</th><th>收支</th><th>分類</th><th>支付/轉帳</th><th>備註</th><th class="text-right">金額</th><th>刪</th></tr></thead>
-                    <tbody id="tb-exp" class="divide-y divide-slate-700/50"></tbody>
-                </table>
-            </div>
-        </section>
-
-        <section class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <div class="glass p-4 rounded-2xl">
-                <div class="flex justify-between items-center mb-3"><h2 class="font-bold text-white"><i class="fa-solid fa-building-columns text-cyan-400 mr-2"></i>資產帳戶</h2><button onclick="addAcc()" class="text-xs text-cyan-400 border border-cyan-700 px-2 py-1 rounded">新增</button></div>
-                <div class="scroll-box max-h-[300px]">
-                    <table class="w-full text-xs whitespace-nowrap"><tbody id="tb-acc" class="divide-y divide-slate-700/50"></tbody></table>
-                </div>
-            </div>
-            <div class="space-y-4">
-                <div class="glass p-4 rounded-2xl">
-                    <h2 class="font-bold text-white mb-2"><i class="fa-solid fa-bullseye text-purple-400 mr-2"></i>分類預算 (排除轉帳)</h2>
-                    <div id="v-budget" class="space-y-2"></div>
-                </div>
-                <div class="glass p-4 rounded-2xl">
-                    <div class="flex justify-between items-center mb-3"><h2 class="font-bold text-white"><i class="fa-solid fa-arrow-trend-up text-emerald-400 mr-2"></i>持股</h2><button onclick="addStk()" class="text-xs text-emerald-400 border border-emerald-700 px-2 py-1 rounded">新增</button></div>
-                    <div class="scroll-box"><table class="w-full text-xs whitespace-nowrap"><tbody id="tb-stk"></tbody></table></div>
-                </div>
-            </div>
-        </section>
-
-    </div>
+    <button onclick="document.location.href='https://你的網址?login=success'" style="padding:20px 40px; background: #06b6d4; border:none; border-radius:10px; font-weight:bold; font-size: 20px;">
+        進入理財系統
+    </button>
 
     <script>
-        const PWD = "Step0926";
-        let D = { acc:[], exp:[], stk:[], bg:{ FOOD:3000, TRANSPORT:1000, SHOPPING:2000, MORTGAGE:5000, DAILY_BILLS:1500, OTHER:0 } };
-        let fails = 0, lockTime = 0, timer;
-
-        // UI 常用常數，大幅壓縮代碼長度
-        const CM = {
-            FOOD:['餐飲','text-emerald-400',true], TRANSPORT:['交通','text-cyan-400',true], SHOPPING:['購物','text-purple-400',true], 
-            MORTGAGE:['按揭','text-amber-400',true], DAILY_BILLS:['繳費','text-rose-400',true], OTHER:['轉帳/其他','text-slate-500',false]
-        };
-        const inp = `bg-transparent border-b border-transparent focus:border-cyan-400 focus:outline-none w-full font-mono`;
-        const sel = `bg-slate-900 border border-slate-700 rounded p-1 text-[11px] focus:outline-none`;
-
-        function initApp() {
-            fails = parseInt(localStorage.getItem('cw_f') || '0');
-            lockTime = parseInt(localStorage.getItem('cw_l') || '0');
-            checkLock();
+        // 如果網址包含 login=success，就直接顯示內容
+        if (window.location.search.includes('login=success')) {
+            alert('登入成功！');
+            // 在這裡載入你的 dashboard
         }
-
-        function checkLock() {
-            let n = Date.now();
-            if (lockTime > n) lockUI(lockTime - n);
-            else { if(fails>=5){ fails=0; localStorage.setItem('cw_f','0'); } unlockUI(); }
-        }
-
-        function login() {
-            if(lockTime > Date.now()) return;
-            let v = document.getElementById('pwd-input').value.trim();
-            if(v === PWD || v === PWD.toLowerCase()) {
-                fails = 0; localStorage.setItem('cw_f','0');
-                loadDb();
-            } else {
-                fails++; localStorage.setItem('cw_f', fails);
-                if(fails >= 5) {
-                    lockTime = Date.now() + 180000; localStorage.setItem('cw_l', lockTime); checkLock();
-                } else alert(`密碼錯誤！剩餘 ${5-fails} 次`);
-            }
-        }
-
-        function lockUI(ms) {
-            let b = document.getElementById('login-btn'), i = document.getElementById('pwd-input'), m = document.getElementById('lock-msg');
-            b.disabled=true; i.disabled=true; i.value=''; b.className="w-full py-4 bg-slate-800 text-slate-500 rounded-xl font-bold mb-2"; m.style.display='block';
-            clearInterval(timer);
-            timer = setInterval(()=>{
-                ms-=1000;
-                if(ms<=0){ clearInterval(timer); unlockUI(); }
-                else { m.innerText = `鎖定中，請等 ${Math.floor(ms/60000)}分 ${Math.floor((ms/1000)%60)}秒`; }
-            },1000);
-        }
-
-        function unlockUI() {
-            let b = document.getElementById('login-btn'), i = document.getElementById('pwd-input'), m = document.getElementById('lock-msg');
-            b.disabled=false; i.disabled=false; m.style.display='none';
-            b.className="w-full py-4 bg-cyan-600 hover:bg-cyan-500 text-white font-black rounded-xl transition shadow-lg mb-2";
-            b.innerText="進入主控台";
-        }
-
-        function togglePwd(el) {
-            let i = document.getElementById('pwd-input');
-            if(i.type==='password'){ i.type='text'; el.classList.replace('fa-eye','fa-eye-slash'); }
-            else { i.type='password'; el.classList.replace('fa-eye-slash','fa-eye'); }
-        }
-
-        function lock() {
-            document.getElementById('main-content').classList.add('hidden','opacity-0');
-            document.getElementById('lock-screen').style.display='flex';
-            document
+    </script>
+</body>
+</html>
