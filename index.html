@@ -114,15 +114,6 @@
             <div id="v-banks" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2"></div>
         </section>
 
-        <!-- 資產帳戶（分組） -->
-        <section class="space-y-3">
-            <div class="flex justify-between items-center">
-                <h2 class="section-h"><i class="fa-solid fa-wallet text-emerald-400 mr-1.5 text-xs"></i>資產帳戶</h2>
-                <button onclick="addAcc()" class="text-[10px] text-cyan-400 border border-cyan-800 px-2 py-1 rounded hover:bg-cyan-950">＋ 新增</button>
-            </div>
-            <div id="v-acc-groups" class="space-y-4"></div>
-        </section>
-
         <!-- 記帳本 -->
         <section class="glass p-4 rounded-2xl">
             <div class="flex justify-between items-center mb-3">
@@ -136,6 +127,15 @@
                     <tbody id="tb-exp" class="divide-y divide-slate-700/50"></tbody>
                 </table>
             </div>
+        </section>
+
+        <!-- 資產帳戶（分組） -->
+        <section class="space-y-3">
+            <div class="flex justify-between items-center">
+                <h2 class="section-h"><i class="fa-solid fa-wallet text-emerald-400 mr-1.5 text-xs"></i>資產帳戶</h2>
+                <button onclick="addAcc()" class="text-[10px] text-cyan-400 border border-cyan-800 px-2 py-1 rounded hover:bg-cyan-950">＋ 新增</button>
+            </div>
+            <div id="v-acc-groups" class="space-y-4"></div>
         </section>
 
         <section class="grid grid-cols-1 lg:grid-cols-2 gap-4">
