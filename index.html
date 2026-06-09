@@ -1,8 +1,118 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>CyberWealth - 智慧理財主控台</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        tailwind.config={theme:{extend:{fontFamily:{sans:['Inter','sans-serif'],mono:['JetBrains Mono','monospace']}}}}
+    </script>
+    <style>
+        body { background-color: #020617; -webkit-text-size-adjust: 100%; color: #cbd5e1; }
+        .glass { background: rgba(15,23,42,0.8); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.05); }
+        input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+        ::-webkit-scrollbar { width: 4px; height: 6px; }
+        ::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
+        .scroll-box { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    </style>
+</head>
+<body onload="initApp()" class="p-3 md:p-6">
+
+    <div id="lock-screen" class="fixed inset-0 bg-[#020617] z-50 flex flex-col items-center justify-center p-4">
+        <div class="max-w-sm w-full glass p-8 rounded-3xl text-center shadow-2xl">
+            <i class="fa-solid fa-shield-halved text-cyan-400 text-4xl mb-4 block"></i>
+            <h2 class="text-xl font-bold text-white mb-2 tracking-widest">系統解鎖</h2>
+            <p class="text-xs text-slate-400 mb-6">錯誤 5 次將鎖定 3 分鐘</p>
+            
+            <div class="relative w-full mb-4">
+                <input type="password" id="pwd-input" placeholder="輸入密碼" onkeydown="if(event.key==='Enter') login()" 
+                       class="w-full bg-slate-900 border-2 border-slate-700 rounded-xl p-4 text-center text-white font-mono tracking-widest focus:border-cyan-400 outline-none">
+                <i class="fa-solid fa-eye absolute right-4 top-5 text-slate-500" onclick="togglePwd(this)"></i>
+            </div>
+            
+            <button id="login-btn" onclick="login()" class="w-full py-4 bg-cyan-600 hover:bg-cyan-500 text-white font-black rounded-xl transition shadow-lg mb-2">
+                進入主控台
+            </button>
+            <p id="lock-msg" class="text-rose-500 text-xs font-bold hidden"></p>
+        </div>
+    </div>
+
+    <div id="main-content" class="max-w-[1200px] w-full mx-auto hidden opacity-0 transition-opacity duration-500 space-y-6">
+        
+        <header class="flex justify-between items-center pb-4 border-b border-slate-800">
+            <div>
+                <h1 class="text-2xl font-black text-white tracking-widest"><i class="fa-solid fa-bolt text-cyan-400 mr-2"></i>CYBERWEALTH</h1>
+                <p class="text-[10px] text-emerald-400">流水帳全自動連動版</p>
+            </div>
+            <button onclick="lock()" class="px-3 py-2 bg-slate-800 rounded-lg text-xs font-bold"><i class="fa-solid fa-lock text-rose-400"></i> 鎖定</button>
+        </header>
+
+        <section class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="glass p-6 rounded-2xl relative overflow-hidden">
+                <span class="text-xs font-bold text-slate-400">總流動資產 (現金+股票-卡債)</span>
+                <div class="text-4xl md:text-5xl font-black text-emerald-400 font-mono my-2" id="v-liquid">HK$ 0</div>
+                <div class="grid grid-cols-2 gap-4 mt-4 pt-4 border-t border-slate-700 text-sm">
+                    <div><span class="block text-[10px] text-slate-500">現金存款</span><span id="v-cash" class="font-mono text-white font-bold">0</span></div>
+                    <div><span class="block text-[10px] text-slate-500">信用卡負債</span><span id="v-cc" class="font-mono text-rose-400 font-bold">0</span></div>
+                    <div><span class="block text-[10px] text-slate-500">股票現值</span><span id="v-stock" class="font-mono text-cyan-400 font-bold">0</span></div>
+                    <div><span class="block text-[10px] text-slate-500">按揭未還</span><span id="v-loan" class="font-mono text-slate-500 font-bold">0</span></div>
+                </div>
+            </div>
+            <div class="glass p-6 rounded-2xl flex flex-col justify-center text-sm font-mono">
+                <div class="mb-4">
+                    <div class="flex justify-between mb-1 text-xs"><span class="font-sans">總負債率</span><span id="v-dr">0%</span></div>
+                    <div class="h-2 bg-slate-800 rounded-full"><div id="v-dr-bar" class="h-full bg-blue-500"></div></div>
+                </div>
+                <div>
+                    <div class="flex justify-between mb-1 text-xs"><span class="font-sans text-amber-400">卡債額度佔用率</span><span id="v-cr" class="text-amber-400">0%</span></div>
+                    <div class="h-2 bg-slate-800 rounded-full"><div id="v-cr-bar" class="h-full bg-amber-500"></div></div>
+                </div>
+            </div>
+        </section>
+
+        <section class="glass p-4 rounded-2xl">
+            <div class="flex justify-between items-center mb-3">
+                <h2 class="font-bold text-white"><i class="fa-solid fa-receipt text-orange-400 mr-2"></i>自動連動記帳本</h2>
+                <button onclick="addExp()" class="px-3 py-1 bg-orange-500 text-black font-bold text-xs rounded">＋記一筆</button>
+            </div>
+            <div class="scroll-box max-h-[400px]">
+                <table class="w-full text-left text-xs whitespace-nowrap">
+                    <thead class="bg-slate-800 sticky top-0"><tr class="text-slate-400 *:py-2 *:px-2"><th>日期</th><th>收支</th><th>分類</th><th>支付/轉帳</th><th>備註</th><th class="text-right">金額</th><th>刪</th></tr></thead>
+                    <tbody id="tb-exp" class="divide-y divide-slate-700/50"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div class="glass p-4 rounded-2xl">
+                <div class="flex justify-between items-center mb-3"><h2 class="font-bold text-white"><i class="fa-solid fa-building-columns text-cyan-400 mr-2"></i>資產帳戶</h2><button onclick="addAcc()" class="text-xs text-cyan-400 border border-cyan-700 px-2 py-1 rounded">新增</button></div>
+                <div class="scroll-box max-h-[300px]">
+                    <table class="w-full text-xs whitespace-nowrap"><tbody id="tb-acc" class="divide-y divide-slate-700/50"></tbody></table>
+                </div>
+            </div>
+            <div class="space-y-4">
+                <div class="glass p-4 rounded-2xl">
+                    <h2 class="font-bold text-white mb-2"><i class="fa-solid fa-bullseye text-purple-400 mr-2"></i>分類預算 (排除轉帳)</h2>
+                    <div id="v-budget" class="space-y-2"></div>
+                </div>
+                <div class="glass p-4 rounded-2xl">
+                    <div class="flex justify-between items-center mb-3"><h2 class="font-bold text-white"><i class="fa-solid fa-arrow-trend-up text-emerald-400 mr-2"></i>持股</h2><button onclick="addStk()" class="text-xs text-emerald-400 border border-emerald-700 px-2 py-1 rounded">新增</button></div>
+                    <div class="scroll-box"><table class="w-full text-xs whitespace-nowrap"><tbody id="tb-stk"></tbody></table></div>
+                </div>
+            </div>
+        </section>
+
+    </div>
+
+    <script>
         const PWD = "Step0926";
         let D = { acc:[], exp:[], stk:[], bg:{ FOOD:3000, TRANSPORT:1000, SHOPPING:2000, MORTGAGE:5000, DAILY_BILLS:1500, OTHER:0 } };
         let fails = 0, lockTime = 0, timer;
 
-        // UI 常用常數，大幅壓縮代碼長度
         const CM = {
             FOOD:['餐飲','text-emerald-400',true], TRANSPORT:['交通','text-cyan-400',true], SHOPPING:['購物','text-purple-400',true], 
             MORTGAGE:['按揭','text-amber-400',true], DAILY_BILLS:['繳費','text-rose-400',true], OTHER:['轉帳/其他','text-slate-500',false]
@@ -10,7 +120,6 @@
         const inp = `bg-transparent border-b border-transparent focus:border-cyan-400 focus:outline-none w-full font-mono`;
         const sel = `bg-slate-900 border border-slate-700 rounded p-1 text-[11px] focus:outline-none`;
 
-        // 安全讀寫 localStorage，避免儲存失敗時登入卡住
         function lsGet(k, d='') { try { return localStorage.getItem(k) ?? d; } catch(e) { return d; } }
         function lsSet(k, v) { try { localStorage.setItem(k, v); return true; } catch(e) { return false; } }
         function lsDel(k) { try { localStorage.removeItem(k); } catch(e) {} }
@@ -29,10 +138,7 @@
         }
 
         function login() {
-            if(lockTime > Date.now()) {
-                checkLock();
-                return;
-            }
+            if(lockTime > Date.now()) { checkLock(); return; }
             let v = document.getElementById('pwd-input').value.trim();
             if(v.toLowerCase() === PWD.toLowerCase()) {
                 fails = 0; lockTime = 0;
@@ -102,3 +208,113 @@
         }
 
         function saveDb() { lsSet('cw_db_v3', JSON.stringify(D)); renderAll(); }
+        function fNum(n) { return (parseFloat(n)||0).toLocaleString('en-US',{maximumFractionDigits:2}); }
+        function pNum(s) { return parseFloat(String(s).replace(/,/g,''))||0; }
+
+        function applyBal(t, amt, fAcc, tAcc, rev=false) {
+            let s = rev ? -1 : 1; amt = parseFloat(amt)||0; if(amt===0) return;
+            let a1 = D.acc.find(a=>a.name===fAcc), a2 = D.acc.find(a=>a.name===tAcc);
+            if(t==='OUT' && a1) a1.bal -= (amt*s);
+            else if(t==='IN' && a1) a1.bal += (amt*s);
+            else if(t==='TRANSFER'){ if(a1) a1.bal -= (amt*s); if(a2) a2.bal += (amt*s); }
+        }
+
+        function renderAll() {
+            let tCash=0, tDebt=0, tLim=0, tLoan=0, tStk=0;
+            D.stk.forEach(s => tStk += (pNum(s.sh)*pNum(s.cur)));
+            D.acc.forEach(a => {
+                let v=pNum(a.bal); if(a.type==='CASH') tCash+=v; else if(a.type==='CARD'){ tDebt+=Math.abs(v); tLim+=pNum(a.lim); } else tLoan+=Math.abs(v);
+            });
+            let tAst = tCash+tStk, tLia = tLoan+tDebt;
+            document.getElementById('v-liquid').innerText = `HK$ ${fNum(tAst-tDebt)}`;
+            document.getElementById('v-cash').innerText = fNum(tCash);
+            document.getElementById('v-cc').innerText = fNum(tDebt);
+            document.getElementById('v-stock').innerText = fNum(tStk);
+            document.getElementById('v-loan').innerText = fNum(tLoan);
+            
+            let dr = tAst>0 ? (tLia/tAst)*100 : 0, cr = tLim>0 ? (tDebt/tLim)*100 : 0;
+            document.getElementById('v-dr').innerText = dr.toFixed(1)+'%'; document.getElementById('v-dr-bar').style.width = Math.min(dr,100)+'%';
+            document.getElementById('v-cr').innerText = cr.toFixed(1)+'%'; document.getElementById('v-cr-bar').style.width = Math.min(cr,100)+'%';
+
+            let hAcc='';
+            D.acc.forEach((a,i) => {
+                let cl = a.type==='CARD'?'text-amber-400':(a.type==='LOAN'?'text-rose-400':'text-emerald-400');
+                let ex = a.type==='CARD' ? `<div class="text-[9px] mt-1 text-slate-500">額:<input value="${fNum(a.lim)}" onchange="uAcc(${i},'lim',this.value)" class="w-12 bg-transparent text-right outline-none text-slate-300"> | 結:<input value="${a.day||15}" onchange="uAcc(${i},'day',this.value)" class="w-6 bg-transparent text-right outline-none text-amber-500"></div>` : '';
+                hAcc+=`<tr>
+                    <td class="p-2"><input value="${a.inst}" onchange="uAcc(${i},'inst',this.value)" class="${inp} w-10 text-[10px]"></td>
+                    <td class="p-2"><input value="${a.name}" onchange="uAcc(${i},'name',this.value)" class="${inp} w-full font-bold"></td>
+                    <td class="p-2"><select onchange="uAcc(${i},'type',this.value)" class="${sel} ${cl}"><option value="CASH" ${a.type==='CASH'?'selected':''}>現金</option><option value="CARD" ${a.type==='CARD'?'selected':''}>信用卡</option><option value="LOAN" ${a.type==='LOAN'?'selected':''}>貸款</option></select></td>
+                    <td class="p-2 text-right"><input value="${fNum(a.bal)}" onchange="uAcc(${i},'bal',this.value)" class="bg-slate-900 rounded p-1 text-right w-20 font-bold outline-none ${a.bal<0?'text-rose-400':'text-emerald-400'}">${ex}</td>
+                    <td class="p-2 text-center"><i class="fa-solid fa-trash text-slate-600 hover:text-rose-500" onclick="dAcc(${i})"></i></td>
+                </tr>`;
+            });
+            document.getElementById('tb-acc').innerHTML = hAcc;
+
+            let getOpts = (pg, selVal) => {
+                let arr = D.acc.filter(a => pg==='ALL' ? true : (pg==='CARD'?a.type==='CARD':a.type==='CASH')).map(a=>a.name);
+                if(!arr.includes(selVal) && selVal) arr.unshift(selVal);
+                return arr.map(n => `<option value="${n}" ${n===selVal?'selected':''}>${n}</option>`).join('');
+            };
+
+            let hExp='';
+            D.exp.sort((a,b)=>new Date(b.date)-new Date(a.date)).forEach(e => {
+                let idx = D.exp.findIndex(x=>x.id===e.id);
+                let pHtm = e.t==='TRANSFER' ? 
+                    `<div class="flex gap-1"><select onchange="uExp(${idx},'pm',this.value)" class="${sel} flex-1 text-slate-300"><option disabled ${!e.pm?'selected':''}>轉出</option>${getOpts('ALL',e.pm)}</select><i class="fa-solid fa-arrow-right text-[8px] text-cyan-500 mt-2"></i><select onchange="uExp(${idx},'to',this.value)" class="${sel} flex-1 text-emerald-400"><option disabled ${!e.to?'selected':''}>轉入</option>${getOpts('ALL',e.to)}</select></div>` :
+                    `<div class="flex gap-1"><select onchange="uExpPg(${idx},this.value)" class="${sel} w-[60px] text-slate-400"><option value="CASH" ${e.pg==='CASH'?'selected':''}>戶口</option><option value="CARD" ${e.pg==='CARD'?'selected':''}>信用卡</option></select><select onchange="uExp(${idx},'pm',this.value)" class="${sel} flex-1 text-amber-400">${getOpts(e.pg,e.pm)}</select></div>`;
+
+                hExp+=`<tr class="hover:bg-slate-800/50">
+                    <td class="p-2"><input type="date" value="${e.date}" onchange="uExp(${idx},'date',this.value)" class="${inp} text-[10px]"></td>
+                    <td class="p-2"><select onchange="uExp(${idx},'t',this.value)" class="${sel} ${e.t==='IN'?'text-emerald-400':(e.t==='OUT'?'text-rose-400':'text-cyan-400')}"><option value="OUT" ${e.t==='OUT'?'selected':''}>支</option><option value="IN" ${e.t==='IN'?'selected':''}>收</option><option value="TRANSFER" ${e.t==='TRANSFER'?'selected':''}>轉</option></select></td>
+                    <td class="p-2"><select onchange="uExp(${idx},'cat',this.value)" class="${sel}">${Object.keys(CM).map(k=>`<option value="${k}" ${e.cat===k?'selected':''}>${CM[k][0]}</option>`).join('')}</select></td>
+                    <td class="p-2 min-w-[160px]">${pHtm}</td>
+                    <td class="p-2"><input value="${e.ds}" onchange="uExp(${idx},'ds',this.value)" class="${inp} w-20"></td>
+                    <td class="p-2 text-right"><input value="${fNum(e.amt)}" onchange="uExp(${idx},'amt',this.value)" class="bg-slate-900 rounded p-1 text-right w-16 font-bold outline-none text-white"></td>
+                    <td class="p-2 text-center"><i class="fa-solid fa-trash text-slate-600 hover:text-rose-500" onclick="dExp(${idx})"></i></td>
+                </tr>`;
+            });
+            document.getElementById('tb-exp').innerHTML = hExp;
+
+            let mStr = new Date().toISOString().slice(0,7), mExp = D.exp.filter(e=>e.date.startsWith(mStr)&&e.t==='OUT'), hB='', tB=0, tS=0;
+            Object.keys(CM).forEach(k => {
+                if(!CM[k][2]) return;
+                let cB = pNum(D.bg[k]||0), cS = mExp.filter(e=>e.cat===k).reduce((sum,e)=>sum+pNum(e.amt),0);
+                tB+=cB; tS+=cS;
+                hB+=`<div class="bg-slate-900/60 p-2 rounded border border-slate-800 mb-1 flex items-center justify-between text-xs"><div class="flex gap-2 w-1/3"><span class="${CM[k][1]} font-bold">${CM[k][0]}</span></div><div class="flex text-slate-400 font-mono gap-1 items-center">花$${fNum(cS)}/預<input value="${fNum(cB)}" onchange="D.bg['${k}']=pNum(this.value);saveDb()" class="w-12 bg-slate-950 text-right outline-none text-white rounded px-1 border border-slate-700"></div></div>`;
+            });
+            document.getElementById('v-budget').innerHTML = `<div class="text-xs mb-2 text-slate-300">本月總支: <span class="font-bold text-white text-sm">$${fNum(tS)} / $${fNum(tB)}</span></div>${hB}`;
+
+            let hStk='';
+            D.stk.forEach((s,i) => {
+                hStk+=`<tr><td class="p-2"><input value="${s.code}" onchange="D.stk[${i}].code=this.value;saveDb()" class="${inp} w-16"></td><td class="p-2"><input value="${fNum(s.sh)}" onchange="D.stk[${i}].sh=pNum(this.value);saveDb()" class="w-12 bg-slate-900 rounded p-1 text-center outline-none"></td><td class="p-2"><input value="${fNum(s.cost)}" onchange="D.stk[${i}].cost=pNum(this.value);saveDb()" class="w-12 bg-slate-900 rounded p-1 text-center outline-none"></td><td class="p-2 text-right"><input value="${fNum(s.cur)}" onchange="D.stk[${i}].cur=pNum(this.value);saveDb()" class="w-16 bg-slate-900 rounded p-1 text-right text-emerald-400 font-bold outline-none"></td><td class="p-2 text-center"><i class="fa-solid fa-trash text-slate-600 hover:text-rose-500" onclick="D.stk.splice(${i},1);saveDb()"></i></td></tr>`;
+            });
+            document.getElementById('tb-stk').innerHTML = hStk;
+        }
+
+        function uAcc(i, f, v) {
+            if(f==='day') D.acc[i][f]=parseInt(v)||15;
+            else if(f==='name'){ let o=D.acc[i].name; D.acc[i].name=v; D.exp.forEach(e=>{if(e.pm===o)e.pm=v; if(e.to===o)e.to=v;}); }
+            else D.acc[i][f] = (f==='bal'||f==='lim') ? pNum(v) : v;
+            saveDb();
+        }
+        function uExp(i, f, v) {
+            let o = D.exp[i]; applyBal(o.t, o.amt, o.pm, o.to, true);
+            if(f==='amt') D.exp[i][f] = pNum(v);
+            else if(f==='t'){ D.exp[i].t = v; if(v==='TRANSFER'){ D.exp[i].pg='TRANSFER'; D.exp[i].cat='OTHER'; D.exp[i].pm=D.acc[0]?.name||''; D.exp[i].to=D.acc[1]?.name||''; }else{ D.exp[i].pg='CASH'; D.exp[i].cat='FOOD'; D.exp[i].pm=D.acc.find(a=>a.type==='CASH')?.name||''; } }
+            else D.exp[i][f] = v;
+            let n = D.exp[i]; applyBal(n.t, n.amt, n.pm, n.to, false);
+            saveDb();
+        }
+        function uExpPg(i, g) {
+            D.exp[i].pg = g; let o = D.exp[i]; applyBal(o.t, o.amt, o.pm, o.to, true);
+            D.exp[i].pm = D.acc.find(a=>g==='CARD'?a.type==='CARD':a.type==='CASH')?.name||'';
+            let n = D.exp[i]; applyBal(n.t, n.amt, n.pm, n.to, false); saveDb();
+        }
+        function addExp() { D.exp.unshift({id:Date.now(),date:new Date().toISOString().split('T')[0],t:'OUT',cat:'FOOD',pg:'CASH',pm:D.acc.find(a=>a.type==='CASH')?.name||'',to:'',ds:'',amt:0}); saveDb(); }
+        function dExp(i) { if(confirm('刪除並還原餘額？')){ let o=D.exp[i]; applyBal(o.t,o.amt,o.pm,o.to,true); D.exp.splice(i,1); saveDb(); } }
+        function addAcc() { D.acc.push({id:Date.now(),inst:'NEW',name:'新帳戶',type:'CASH',cur:'HKD',bal:0,lim:0,day:15}); saveDb(); }
+        function dAcc(i) { if(confirm('刪除此帳戶？')){ D.acc.splice(i,1); saveDb(); } }
+        function addStk() { D.stk.push({id:Date.now(),inst:'FUTU',code:'0000',sh:0,cost:0,cur:0}); saveDb(); }
+    </script>
+</body>
+</html>
