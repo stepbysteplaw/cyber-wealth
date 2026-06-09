@@ -3,70 +3,90 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>CyberWealth - 智慧連動理財主控台</title>
+    <title>CyberWealth - 智慧理財主控台</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Noto+Sans+TC:wght@300;400;500;700;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'Noto Sans TC', 'sans-serif'], mono: ['JetBrains Mono', 'monospace'] },
+                    colors: {
+                        cyberDark: '#020617', cyberSlate: '#0f172a', cyberCard: '#1e293b',
+                        neonCyan: '#06b6d4', neonGreen: '#10b981', neonPurple: '#8b5cf6', neonRed: '#f43f5e', neonOrange: '#f97316'
+                    }
+                }
+            }
+        }
+    </script>
     <style>
-        body { background-color: #020617; }
-        .glass-panel { background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.05); }
+        body {
+            background-color: #020617;
+            background-image: radial-gradient(circle at 15% 50%, rgba(6, 182, 212, 0.04) 0%, transparent 50%), radial-gradient(circle at 85% 30%, rgba(139, 92, 246, 0.04) 0%, transparent 50%), linear-gradient(rgba(255, 255, 255, 0.015) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.015) 1px, transparent 1px);
+            background-size: 100% 100%, 100% 100%, 32px 32px, 32px 32px;
+            -webkit-text-size-adjust: 100%;
+        }
+        .glass-panel { background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.05); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+        .warning-pulse { animation: pulseRed 2s infinite ease-in-out; }
+        @keyframes pulseRed { 0%, 100% { box-shadow: 0 0 10px rgba(244,63,94,0.2); border-color: rgba(244,63,94,0.3); } 50% { box-shadow: 0 0 20px rgba(244,63,94,0.6); border-color: rgba(244,63,94,0.8); } }
+        input[type="number"]::-webkit-inner-spin-button, input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+        input[type="number"] { -moz-appearance: textfield; }
+        ::-webkit-scrollbar { width: 4px; height: 6px; }
+        ::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.5); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb { background: rgba(71, 85, 105, 0.8); border-radius: 4px; }
+        .mobile-table-wrapper { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        .table-min-w input, .table-min-w select { min-width: 80px; }
     </style>
 </head>
-<body class="text-slate-300 min-h-screen flex flex-col p-3 md:p-8">
+<body class="text-slate-300 min-h-screen flex flex-col p-3 md:p-8 selection:bg-neonCyan selection:text-slate-900" onload="initLockScreen()">
 
-    <!-- 預設密碼登入層 -->
-    <div id="crypto-lock-screen" class="fixed inset-0 bg-cyberDark z-[100] flex flex-col items-center justify-center p-4">
-        <div class="max-w-md w-full glass-panel p-8 rounded-3xl text-center border border-slate-700">
-            <h2 class="text-2xl font-bold text-white mb-6">歡迎使用 CyberWealth</h2>
-            <button id="unlock-btn" onclick="unlockDashboard()" class="w-full py-4 bg-cyan-600 text-white font-black rounded-xl shadow-lg">
-                進入理財主控台 (密碼已預設)
+    <div id="crypto-lock-screen" class="fixed inset-0 bg-cyberDark/95 backdrop-blur-md z-[100] flex flex-col items-center justify-center p-4 transition-opacity duration-500">
+        <div class="max-w-md w-full glass-panel p-6 md:p-8 rounded-3xl text-center relative overflow-hidden border border-slate-700/50">
+            <div class="w-16 h-16 md:w-20 md:h-20 rounded-full bg-gradient-to-br from-cyan-500/20 to-blue-500/20 border border-cyan-500/30 flex items-center justify-center text-cyan-400 text-2xl md:text-3xl mx-auto mb-6 shadow-[0_0_30px_rgba(6,182,212,0.2)]">
+                <i class="fa-solid fa-shield-halved"></i>
+            </div>
+            <h2 class="text-xl md:text-2xl font-bold text-white mb-2 tracking-widest" id="lock-title">主控台安全解鎖</h2>
+            <p class="text-xs md:text-sm text-slate-400 mb-8" id="lock-desc">請輸入密碼登入系統。<br>連續錯誤 5 次將鎖定 3 分鐘。</p>
+            
+            <div class="relative w-full mb-6 group">
+                <input type="password" id="master-password-input" placeholder="輸入密碼" 
+                       autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false"
+                       class="w-full bg-slate-900/80 border-2 border-slate-700 rounded-xl px-4 py-3 md:py-4 pr-12 text-center text-white font-mono text-lg tracking-[0.2em] focus:outline-none focus:border-cyan-400 transition-colors shadow-inner disabled:opacity-50">
+                <button type="button" onclick="togglePasswordVisibility()" class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-cyan-400 focus:outline-none transition-colors">
+                    <i class="fa-solid fa-eye text-lg" id="toggle-pwd-icon"></i>
+                </button>
+            </div>
+            
+            <button id="unlock-btn" onclick="attemptLogin()" class="w-full py-3 md:py-4 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-black rounded-xl transition duration-300 shadow-[0_0_20px_rgba(6,182,212,0.3)] tracking-wide mb-2 disabled:opacity-50">
+                <i class="fa-solid fa-unlock mr-2"></i> 驗證身分進入
             </button>
+
+            <p id="lockout-msg" class="text-rose-500 text-xs md:text-sm font-bold hidden mt-2"></p>
+            
+            <div class="flex flex-col gap-2 mt-6 pt-4 border-t border-slate-700/50">
+                <button onclick="importData()" class="w-full py-2 hover:bg-emerald-500/10 text-emerald-500/80 hover:text-emerald-400 rounded-lg text-xs transition duration-200 font-bold border border-emerald-500/20">
+                    <i class="fa-solid fa-file-import mr-1"></i> 匯入資料 (跨設備同步用)
+                </button>
+                <button onclick="resetToDemoData()" class="w-full py-2 hover:bg-rose-500/10 text-rose-500/70 hover:text-rose-400 rounded-lg text-xs transition duration-200">
+                    <i class="fa-solid fa-triangle-exclamation mr-1"></i> 清空本地資料庫
+                </button>
+            </div>
         </div>
     </div>
 
-    <!-- 主頁面內容與之前的完全一致 -->
-    <main id="dashboard-content" class="max-w-[1400px] w-full mx-auto opacity-0 pointer-events-none transition-opacity duration-700">
-        <!-- 這裡放入你之前所有的 HTML 結構 (確保 ID 一致) -->
-        <!-- ... (請保持你之前最新的 HTML 結構，不要修改這裡的 ID) ... -->
-        <!-- 為了節省篇幅，請保留你上次 HTML 中關於 dashboard-content 的部分 -->
-    </main>
-
-    <script>
-        // 設定預設密碼
-        const DEFAULT_PASSWORD = "Step096";
-        let accounts = [], stocks = [], expenses = [], budget = {};
-        let masterPassword = DEFAULT_PASSWORD; 
-
-        function unlockDashboard() {
-            // 直接略過輸入，直接使用預設密碼
-            try {
-                const encryptedData = localStorage.getItem('cyber_wealth_encrypted');
-                
-                if (!encryptedData) {
-                    // 初始化結構
-                    accounts = [...]; // (載入預設資料)
-                    expenses = [...];
-                    saveAndEncryptData();
-                } else {
-                    const bytes = CryptoJS.AES.decrypt(encryptedData, DEFAULT_PASSWORD);
-                    const decryptedText = bytes.toString(CryptoJS.enc.Utf8);
-                    const parsed = JSON.parse(decryptedText);
-                    accounts = parsed.accounts || [];
-                    stocks = parsed.stocks || [];
-                    expenses = parsed.expenses || [];
-                    budget = parsed.budget || {};
-                }
-                
-                document.getElementById('crypto-lock-screen').style.display = 'none';
-                document.getElementById('dashboard-content').classList.remove('opacity-0', 'pointer-events-none');
-                updateDashboard();
-            } catch (err) {
-                alert("初始化失敗，可能需要重置資料。");
-            }
-        }
-
-        // --- 確保其他函數 (updateDashboard, saveAndEncryptData 等) 保持原樣 ---
-        // ...
-    </script>
-</body>
-</html>
+    <header class="max-w-[1400px] w-full mx-auto flex flex-col md:flex-row justify-between items-start md:items-center mb-6 border-b border-slate-800/60 pb-4 gap-4">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-gradient-to-br from-cyan-500 to-purple-600 flex items-center justify-center text-white shadow-[0_0_20px_rgba(6,182,212,0.4)] flex-shrink-0">
+                <i class="fa-solid fa-bolt text-lg md:text-xl"></i>
+            </div>
+            <div>
+                <h1 class="text-xl md:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white to-slate-400 tracking-wider">CYBERWEALTH</h1>
+                <p class="text-[10px] md:text-xs text-emerald-400 font-medium tracking-wide mt-1"><i class="fa-solid fa-link mr-1"></i>流水帳全自動連動版</p>
+            </div>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+            <button onclick="exportData()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 rounded-lg text-xs md:text-sm transition-all shadow-sm">
+                <i class="fa-solid fa-file-export mr-1"></i> 匯出備份
