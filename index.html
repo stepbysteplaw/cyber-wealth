@@ -7,7 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
     <script>
         tailwind.config={theme:{extend:{fontFamily:{sans:['Inter','sans-serif'],mono:['JetBrains Mono','monospace']}}}}
     </script>
@@ -25,30 +25,43 @@
     <div id="lock-screen" class="fixed inset-0 bg-[#020617] z-50 flex flex-col items-center justify-center p-4">
         <div class="max-w-sm w-full glass p-8 rounded-3xl text-center shadow-2xl">
             <i class="fa-solid fa-shield-halved text-cyan-400 text-4xl mb-4 block"></i>
-            <h2 class="text-xl font-bold text-white mb-2 tracking-widest">系統解鎖</h2>
-            <p class="text-xs text-slate-400 mb-6">錯誤 5 次將鎖定 3 分鐘</p>
-            
+            <h2 id="lock-title" class="text-xl font-bold text-white mb-2 tracking-widest">系統解鎖</h2>
+            <p id="lock-desc" class="text-xs text-slate-400 mb-6">輸入你的專屬密碼解鎖資料。錯誤 5 次將鎖定 3 分鐘。</p>
+
             <div class="relative w-full mb-4">
-                <input type="password" id="pwd-input" placeholder="輸入密碼" onkeydown="if(event.key==='Enter') login()" 
+                <input type="password" id="pwd-input" placeholder="輸入密碼" onkeydown="if(event.key==='Enter') login()"
                        class="w-full bg-slate-900 border-2 border-slate-700 rounded-xl p-4 text-center text-white font-mono tracking-widest focus:border-cyan-400 outline-none">
-                <i class="fa-solid fa-eye absolute right-4 top-5 text-slate-500" onclick="togglePwd(this)"></i>
+                <i class="fa-solid fa-eye absolute right-4 top-5 text-slate-500 cursor-pointer" onclick="togglePwd(this,'pwd-input')"></i>
             </div>
-            
+
+            <div id="pwd-confirm-wrap" class="relative w-full mb-4 hidden">
+                <input type="password" id="pwd-confirm" placeholder="再次確認密碼" onkeydown="if(event.key==='Enter') login()"
+                       class="w-full bg-slate-900 border-2 border-slate-700 rounded-xl p-4 text-center text-white font-mono tracking-widest focus:border-cyan-400 outline-none">
+                <i class="fa-solid fa-eye absolute right-4 top-5 text-slate-500 cursor-pointer" onclick="togglePwd(this,'pwd-confirm')"></i>
+            </div>
+
             <button id="login-btn" onclick="login()" class="w-full py-4 bg-cyan-600 hover:bg-cyan-500 text-white font-black rounded-xl transition shadow-lg mb-2">
                 進入主控台
             </button>
             <p id="lock-msg" class="text-rose-500 text-xs font-bold hidden"></p>
+            <p class="text-[10px] text-slate-600 mt-3">🔒 資料以 AES 加密儲存於本機，密碼不會寫入程式碼</p>
         </div>
     </div>
 
     <div id="main-content" class="max-w-[1200px] w-full mx-auto hidden opacity-0 transition-opacity duration-500 space-y-6">
-        
-        <header class="flex justify-between items-center pb-4 border-b border-slate-800">
+
+        <header class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 pb-4 border-b border-slate-800">
             <div>
                 <h1 class="text-2xl font-black text-white tracking-widest"><i class="fa-solid fa-bolt text-cyan-400 mr-2"></i>CYBERWEALTH</h1>
-                <p class="text-[10px] text-emerald-400">流水帳全自動連動版</p>
+                <p class="text-[10px] text-emerald-400">AES 加密 · 流水帳全自動連動版</p>
             </div>
-            <button onclick="lock()" class="px-3 py-2 bg-slate-800 rounded-lg text-xs font-bold"><i class="fa-solid fa-lock text-rose-400"></i> 鎖定</button>
+            <div class="flex flex-wrap gap-2 items-center">
+                <span id="backup-hint" class="text-[10px] text-amber-400/80 hidden"></span>
+                <button onclick="exportBackup()" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-xs font-bold"><i class="fa-solid fa-download text-cyan-400"></i> 匯出備份</button>
+                <button onclick="document.getElementById('import-file').click()" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-xs font-bold"><i class="fa-solid fa-upload text-emerald-400"></i> 匯入備份</button>
+                <input type="file" id="import-file" class="hidden" accept=".json,.cwbackup" onchange="importBackup(this)">
+                <button onclick="lock()" class="px-3 py-2 bg-slate-800 rounded-lg text-xs font-bold"><i class="fa-solid fa-lock text-rose-400"></i> 鎖定</button>
+            </div>
         </header>
 
         <section class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -109,12 +122,14 @@
     </div>
 
     <script>
-        const PWD = "Step0926";
+        const VAULT_KEY = 'cw_vault_v4';
+        const BACKUP_DAYS = 7;
+        let masterPwd = '';
         let D = { acc:[], exp:[], stk:[], bg:{ FOOD:3000, TRANSPORT:1000, SHOPPING:2000, MORTGAGE:5000, DAILY_BILLS:1500, OTHER:0 } };
         let fails = 0, lockTime = 0, timer;
 
         const CM = {
-            FOOD:['餐飲','text-emerald-400',true], TRANSPORT:['交通','text-cyan-400',true], SHOPPING:['購物','text-purple-400',true], 
+            FOOD:['餐飲','text-emerald-400',true], TRANSPORT:['交通','text-cyan-400',true], SHOPPING:['購物','text-purple-400',true],
             MORTGAGE:['按揭','text-amber-400',true], DAILY_BILLS:['繳費','text-rose-400',true], OTHER:['轉帳/其他','text-slate-500',false]
         };
         const inp = `bg-transparent border-b border-transparent focus:border-cyan-400 focus:outline-none w-full font-mono`;
@@ -124,10 +139,67 @@
         function lsSet(k, v) { try { localStorage.setItem(k, v); return true; } catch(e) { return false; } }
         function lsDel(k) { try { localStorage.removeItem(k); } catch(e) {} }
 
+        function hasVault() { return !!lsGet(VAULT_KEY); }
+
+        function defaultData() {
+            return {
+                acc: [
+                    { id:1, inst:'WALLET', name:'隨身現金', type:'CASH', cur:'HKD', bal:2500, lim:0, day:null },
+                    { id:2, inst:'HSBC', name:'Red信用卡', type:'CARD', cur:'HKD', bal:-3000, lim:50000, day:15 },
+                    { id:3, inst:'SCB', name:'渣打戶口', type:'CASH', cur:'HKD', bal:150000, lim:0, day:null }
+                ],
+                exp: [{ id:1, date:new Date().toISOString().split('T')[0], t:'OUT', cat:'FOOD', pg:'CARD', pm:'Red信用卡', to:'', ds:'午餐', amt:120 }],
+                stk: [{ id:1, inst:'FUTU', code:'0700', sh:100, cost:300, cur:380 }],
+                bg: { FOOD:3000, TRANSPORT:1000, SHOPPING:2000, MORTGAGE:5000, DAILY_BILLS:1500, OTHER:0 }
+            };
+        }
+
+        function normalizeData(src) {
+            let d = src || defaultData();
+            if(!d.acc) d.acc = [];
+            if(!d.exp) d.exp = [];
+            if(!d.stk) d.stk = [];
+            if(!d.bg) d.bg = { FOOD:3000, TRANSPORT:1000, SHOPPING:2000, MORTGAGE:5000, DAILY_BILLS:1500, OTHER:0 };
+            return d;
+        }
+
+        function encryptData(pwd, data) {
+            return CryptoJS.AES.encrypt(JSON.stringify(data), pwd).toString();
+        }
+
+        function decryptData(pwd, cipher) {
+            try {
+                let bytes = CryptoJS.AES.decrypt(cipher, pwd);
+                let text = bytes.toString(CryptoJS.enc.Utf8);
+                if(!text) return null;
+                return JSON.parse(text);
+            } catch(e) { return null; }
+        }
+
+        function migratePlaintext() {
+            let raw = lsGet('cw_db_v3');
+            if(!raw) return null;
+            try { return normalizeData(JSON.parse(raw)); } catch(e) { return null; }
+        }
+
+        function updateLockUI() {
+            let setup = !hasVault();
+            document.getElementById('lock-title').innerText = setup ? '首次設定密碼' : '系統解鎖';
+            document.getElementById('lock-desc').innerText = setup
+                ? '請設定你的專屬密碼（至少 6 字）。此密碼用於加密財產資料，請務必記住。'
+                : '輸入你的專屬密碼解鎖資料。錯誤 5 次將鎖定 3 分鐘。';
+            document.getElementById('pwd-confirm-wrap').classList.toggle('hidden', !setup);
+            document.getElementById('login-btn').innerText = setup ? '設定密碼並進入' : '進入主控台';
+            document.getElementById('pwd-input').placeholder = setup ? '設定新密碼' : '輸入密碼';
+            document.getElementById('pwd-input').value = '';
+            document.getElementById('pwd-confirm').value = '';
+        }
+
         function initApp() {
             fails = parseInt(lsGet('cw_f', '0')) || 0;
             lockTime = parseInt(lsGet('cw_l', '0')) || 0;
             if (lockTime && lockTime <= Date.now()) { lockTime = 0; lsDel('cw_l'); }
+            updateLockUI();
             checkLock();
         }
 
@@ -139,24 +211,132 @@
 
         function login() {
             if(lockTime > Date.now()) { checkLock(); return; }
-            let v = document.getElementById('pwd-input').value.trim();
-            if(v.toLowerCase() === PWD.toLowerCase()) {
+
+            let pwd = document.getElementById('pwd-input').value;
+            let confirm = document.getElementById('pwd-confirm').value;
+            if(!pwd) return alert('請輸入密碼');
+            if(pwd.length < 6) return alert('密碼至少需要 6 個字元');
+
+            if(!hasVault()) {
+                if(pwd !== confirm) return alert('兩次輸入的密碼不一致');
+                masterPwd = pwd;
+                let migrated = migratePlaintext();
+                D = normalizeData(migrated || defaultData());
+                if(!saveVault()) return alert('無法儲存加密資料，請檢查瀏覽器儲存空間');
+                if(migrated) lsDel('cw_db_v3');
                 fails = 0; lockTime = 0;
                 lsSet('cw_f','0'); lsDel('cw_l');
-                loadDb();
-            } else {
+                enterDashboard();
+                return;
+            }
+
+            let decrypted = decryptData(pwd, lsGet(VAULT_KEY));
+            if(!decrypted) {
                 fails++;
                 lsSet('cw_f', fails);
                 if(fails >= 5) {
                     lockTime = Date.now() + 180000; lsSet('cw_l', lockTime); checkLock();
                     alert('密碼錯誤 5 次，系統已鎖定 3 分鐘');
                 } else alert(`密碼錯誤！剩餘 ${5-fails} 次`);
+                return;
             }
+
+            masterPwd = pwd;
+            D = normalizeData(decrypted);
+            fails = 0; lockTime = 0;
+            lsSet('cw_f','0'); lsDel('cw_l');
+            enterDashboard();
+        }
+
+        function saveVault() {
+            if(!masterPwd) return false;
+            return lsSet(VAULT_KEY, encryptData(masterPwd, D));
+        }
+
+        function enterDashboard() {
+            document.getElementById('lock-screen').style.display='none';
+            let m = document.getElementById('main-content');
+            m.classList.remove('hidden');
+            setTimeout(()=>m.classList.remove('opacity-0'), 50);
+            try { renderAll(); updateBackupHint(); checkBackupReminder(); }
+            catch(e) { console.error(e); alert('畫面載入失敗'); }
+        }
+
+        function updateBackupHint() {
+            let el = document.getElementById('backup-hint');
+            let last = lsGet('cw_last_backup');
+            if(!last) { el.classList.add('hidden'); return; }
+            el.classList.remove('hidden');
+            el.innerText = '上次備份：' + last.slice(0, 10);
+        }
+
+        function checkBackupReminder() {
+            let last = lsGet('cw_last_backup');
+            if(!last) {
+                setTimeout(()=>{ if(confirm('建議立即匯出第一份加密備份，以防資料遺失。現在匯出？')) exportBackup(); }, 800);
+                return;
+            }
+            let days = (Date.now() - new Date(last).getTime()) / 86400000;
+            if(days >= BACKUP_DAYS) {
+                setTimeout(()=>{ if(confirm(`已超過 ${BACKUP_DAYS} 天未備份，建議現在匯出加密備份。`)) exportBackup(); }, 800);
+            }
+        }
+
+        function exportBackup() {
+            if(!masterPwd) return alert('請先解鎖系統');
+            saveVault();
+            let payload = {
+                app: 'CyberWealth',
+                version: 4,
+                encrypted: true,
+                exportedAt: new Date().toISOString(),
+                data: lsGet(VAULT_KEY)
+            };
+            let blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+            let a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = 'cyberwealth-backup-' + new Date().toISOString().slice(0, 10) + '.cwbackup.json';
+            a.click();
+            URL.revokeObjectURL(a.href);
+            lsSet('cw_last_backup', new Date().toISOString());
+            updateBackupHint();
+            alert('加密備份已下載。請將檔案存到 iCloud / Google Drive 等安全位置。');
+        }
+
+        function importBackup(input) {
+            let file = input.files[0];
+            if(!file) return;
+            let reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    let payload = JSON.parse(e.target.result);
+                    let cipher = payload.data || payload;
+                    if(typeof cipher !== 'string') throw new Error('格式錯誤');
+
+                    if(hasVault() && masterPwd) {
+                        if(!decryptData(masterPwd, cipher)) {
+                            if(!confirm('此備份與目前密碼不符，或格式有誤。仍要覆蓋本機資料嗎？（需用備份時的密碼解鎖）')) { input.value=''; return; }
+                        }
+                    } else if(!confirm('匯入備份將覆蓋本機資料。確定繼續？')) { input.value=''; return; }
+
+                    lsSet(VAULT_KEY, cipher);
+                    masterPwd = '';
+                    lock();
+                    alert('備份已匯入。請用當初設定備份時的密碼重新登入。');
+                } catch(err) {
+                    alert('匯入失敗：' + err.message);
+                }
+                input.value = '';
+            };
+            reader.readAsText(file);
         }
 
         function lockUI(ms) {
             let b = document.getElementById('login-btn'), i = document.getElementById('pwd-input'), m = document.getElementById('lock-msg');
-            b.disabled=true; i.disabled=true; i.value=''; b.className="w-full py-4 bg-slate-800 text-slate-500 rounded-xl font-bold mb-2"; m.style.display='block';
+            b.disabled=true; i.disabled=true; i.value='';
+            document.getElementById('pwd-confirm').disabled=true;
+            b.className="w-full py-4 bg-slate-800 text-slate-500 rounded-xl font-bold mb-2";
+            m.style.display='block';
             clearInterval(timer);
             timer = setInterval(()=>{
                 ms-=1000;
@@ -167,47 +347,33 @@
 
         function unlockUI() {
             let b = document.getElementById('login-btn'), i = document.getElementById('pwd-input'), m = document.getElementById('lock-msg');
-            b.disabled=false; i.disabled=false; m.style.display='none';
+            b.disabled=false; i.disabled=false;
+            document.getElementById('pwd-confirm').disabled=false;
+            m.style.display='none';
             b.className="w-full py-4 bg-cyan-600 hover:bg-cyan-500 text-white font-black rounded-xl transition shadow-lg mb-2";
-            b.innerText="進入主控台";
+            updateLockUI();
         }
 
-        function togglePwd(el) {
-            let i = document.getElementById('pwd-input');
+        function togglePwd(el, id) {
+            let i = document.getElementById(id);
             if(i.type==='password'){ i.type='text'; el.classList.replace('fa-eye','fa-eye-slash'); }
             else { i.type='password'; el.classList.replace('fa-eye-slash','fa-eye'); }
         }
 
         function lock() {
+            masterPwd = '';
             document.getElementById('main-content').classList.add('hidden','opacity-0');
             document.getElementById('lock-screen').style.display='flex';
             document.getElementById('pwd-input').value='';
+            document.getElementById('pwd-confirm').value='';
+            updateLockUI();
         }
 
-        function loadDb() {
-            let raw = lsGet('cw_db_v3');
-            if(raw) {
-                try { D = JSON.parse(raw); } catch(e){ alert('資料損毀，載入預設值'); }
-            } else {
-                D.acc = [
-                    { id:1, inst:'WALLET', name:'隨身現金', type:'CASH', cur:'HKD', bal:2500, lim:0, day:null },
-                    { id:2, inst:'HSBC', name:'Red信用卡', type:'CARD', cur:'HKD', bal:-3000, lim:50000, day:15 },
-                    { id:3, inst:'SCB', name:'渣打戶口', type:'CASH', cur:'HKD', bal:150000, lim:0, day:null }
-                ];
-                D.exp = [{ id:1, date:new Date().toISOString().split('T')[0], t:'OUT', cat:'FOOD', pg:'CARD', pm:'Red信用卡', to:'', ds:'午餐', amt:120 }];
-                D.stk = [{ id:1, inst:'FUTU', code:'0700', sh:100, cost:300, cur:380 }];
-            }
-            if(!D.acc) D.acc = [];
-            if(!D.exp) D.exp = [];
-            if(!D.stk) D.stk = [];
-            if(!D.bg) D.bg = { FOOD:3000, TRANSPORT:1000, SHOPPING:2000, MORTGAGE:5000, DAILY_BILLS:1500, OTHER:0 };
-            document.getElementById('lock-screen').style.display='none';
-            let m = document.getElementById('main-content');
-            m.classList.remove('hidden'); setTimeout(()=>m.classList.remove('opacity-0'),50);
-            try { renderAll(); } catch(e) { console.error(e); alert('畫面載入失敗，已清除損毀資料並重試'); lsDel('cw_db_v3'); location.reload(); }
+        function saveDb() {
+            if(!saveVault()) alert('儲存失敗，請稍後再試');
+            renderAll();
         }
 
-        function saveDb() { lsSet('cw_db_v3', JSON.stringify(D)); renderAll(); }
         function fNum(n) { return (parseFloat(n)||0).toLocaleString('en-US',{maximumFractionDigits:2}); }
         function pNum(s) { return parseFloat(String(s).replace(/,/g,''))||0; }
 
@@ -231,7 +397,7 @@
             document.getElementById('v-cc').innerText = fNum(tDebt);
             document.getElementById('v-stock').innerText = fNum(tStk);
             document.getElementById('v-loan').innerText = fNum(tLoan);
-            
+
             let dr = tAst>0 ? (tLia/tAst)*100 : 0, cr = tLim>0 ? (tDebt/tLim)*100 : 0;
             document.getElementById('v-dr').innerText = dr.toFixed(1)+'%'; document.getElementById('v-dr-bar').style.width = Math.min(dr,100)+'%';
             document.getElementById('v-cr').innerText = cr.toFixed(1)+'%'; document.getElementById('v-cr-bar').style.width = Math.min(cr,100)+'%';
@@ -259,7 +425,7 @@
             let hExp='';
             D.exp.sort((a,b)=>new Date(b.date)-new Date(a.date)).forEach(e => {
                 let idx = D.exp.findIndex(x=>x.id===e.id);
-                let pHtm = e.t==='TRANSFER' ? 
+                let pHtm = e.t==='TRANSFER' ?
                     `<div class="flex gap-1"><select onchange="uExp(${idx},'pm',this.value)" class="${sel} flex-1 text-slate-300"><option disabled ${!e.pm?'selected':''}>轉出</option>${getOpts('ALL',e.pm)}</select><i class="fa-solid fa-arrow-right text-[8px] text-cyan-500 mt-2"></i><select onchange="uExp(${idx},'to',this.value)" class="${sel} flex-1 text-emerald-400"><option disabled ${!e.to?'selected':''}>轉入</option>${getOpts('ALL',e.to)}</select></div>` :
                     `<div class="flex gap-1"><select onchange="uExpPg(${idx},this.value)" class="${sel} w-[60px] text-slate-400"><option value="CASH" ${e.pg==='CASH'?'selected':''}>戶口</option><option value="CARD" ${e.pg==='CARD'?'selected':''}>信用卡</option></select><select onchange="uExp(${idx},'pm',this.value)" class="${sel} flex-1 text-amber-400">${getOpts(e.pg,e.pm)}</select></div>`;
 
