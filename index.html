@@ -49,29 +49,31 @@
                 <i class="fa-solid fa-shield-halved"></i>
             </div>
             <h2 class="text-xl md:text-2xl font-bold text-white mb-2 tracking-widest" id="lock-title">主控台安全解鎖</h2>
-            <p class="text-xs md:text-sm text-slate-400 mb-8" id="lock-desc">請輸入密碼登入系統。<br>連續錯誤 5 次將鎖定 3 分鐘。</p>
+            <p class="text-xs md:text-sm text-slate-400 mb-6" id="lock-desc">請輸入密碼登入系統。<br>連續錯誤 5 次將鎖定 3 分鐘。</p>
             
-            <div class="relative w-full mb-6 group">
-                <input type="password" id="master-password-input" placeholder="輸入密碼" 
-                       autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false"
-                       class="w-full bg-slate-900/80 border-2 border-slate-700 rounded-xl px-4 py-3 md:py-4 pr-12 text-center text-white font-mono text-lg tracking-[0.2em] focus:outline-none focus:border-cyan-400 transition-colors shadow-inner disabled:opacity-50">
-                <button type="button" onclick="togglePasswordVisibility()" class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-cyan-400 focus:outline-none transition-colors">
-                    <i class="fa-solid fa-eye text-lg" id="toggle-pwd-icon"></i>
+            <form onsubmit="handleLoginSubmit(event)" class="w-full flex flex-col items-center">
+                <div class="relative w-full mb-6 group">
+                    <input type="password" id="master-password-input" placeholder="輸入密碼" 
+                           autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false"
+                           class="w-full bg-slate-900/80 border-2 border-slate-700 rounded-xl px-4 py-3 md:py-4 pr-12 text-center text-white font-mono text-lg tracking-[0.2em] focus:outline-none focus:border-cyan-400 transition-colors shadow-inner disabled:opacity-50">
+                    <button type="button" onclick="togglePasswordVisibility()" class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-cyan-400 focus:outline-none transition-colors">
+                        <i class="fa-solid fa-eye text-lg" id="toggle-pwd-icon"></i>
+                    </button>
+                </div>
+                
+                <button type="submit" id="unlock-btn" class="w-full py-3 md:py-4 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-black rounded-xl transition duration-300 shadow-[0_0_20px_rgba(6,182,212,0.3)] tracking-wide disabled:opacity-50">
+                    <i class="fa-solid fa-unlock mr-2"></i> 驗證身分進入
                 </button>
-            </div>
-            
-            <button id="unlock-btn" onclick="attemptLogin()" class="w-full py-3 md:py-4 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-black rounded-xl transition duration-300 shadow-[0_0_20px_rgba(6,182,212,0.3)] tracking-wide mb-2 disabled:opacity-50">
-                <i class="fa-solid fa-unlock mr-2"></i> 驗證身分進入
-            </button>
 
-            <p id="lockout-msg" class="text-rose-500 text-xs md:text-sm font-bold hidden mt-2"></p>
+                <p id="lockout-msg" class="text-rose-500 text-xs md:text-sm font-bold hidden mt-3"></p>
+            </form>
             
-            <div class="flex flex-col gap-2 mt-6 pt-4 border-t border-slate-700/50">
+            <div class="flex flex-col gap-2 mt-6 pt-4 border-t border-slate-700/50 w-full">
                 <button onclick="importData()" class="w-full py-2 hover:bg-emerald-500/10 text-emerald-500/80 hover:text-emerald-400 rounded-lg text-xs transition duration-200 font-bold border border-emerald-500/20">
                     <i class="fa-solid fa-file-import mr-1"></i> 匯入資料 (跨設備同步用)
                 </button>
                 <button onclick="resetToDemoData()" class="w-full py-2 hover:bg-rose-500/10 text-rose-500/70 hover:text-rose-400 rounded-lg text-xs transition duration-200">
-                    <i class="fa-solid fa-triangle-exclamation mr-1"></i> 清空本地資料庫
+                    <i class="fa-solid fa-triangle-exclamation mr-1"></i> 強制清空並重置系統
                 </button>
             </div>
         </div>
@@ -84,9 +86,143 @@
             </div>
             <div>
                 <h1 class="text-xl md:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white to-slate-400 tracking-wider">CYBERWEALTH</h1>
-                <p class="text-[10px] md:text-xs text-emerald-400 font-medium tracking-wide mt-1"><i class="fa-solid fa-link mr-1"></i>流水帳全自動連動版</p>
+                <p class="text-[10px] md:text-xs text-emerald-400 font-medium tracking-wide mt-1"><i class="fa-solid fa-link mr-1"></i>流水帳全自動連動版 (輕量極速)</p>
             </div>
         </div>
         <div class="flex flex-wrap items-center gap-2">
             <button onclick="exportData()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 rounded-lg text-xs md:text-sm transition-all shadow-sm">
                 <i class="fa-solid fa-file-export mr-1"></i> 匯出備份
+            </button>
+            <button onclick="lockSystem()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-rose-400 border border-slate-700 rounded-lg text-xs md:text-sm transition-all shadow-sm">
+                <i class="fa-solid fa-lock mr-1"></i> 鎖定
+            </button>
+        </div>
+    </header>
+
+    <main id="dashboard-content" class="max-w-[1400px] w-full mx-auto flex flex-col gap-6 opacity-0 pointer-events-none transition-opacity duration-700 pb-10">
+        
+        <section class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div class="lg:col-span-2 glass-panel p-5 md:p-8 rounded-3xl relative overflow-hidden group">
+                <div class="absolute top-0 right-0 w-64 h-64 bg-cyan-500/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/4"></div>
+                <div class="relative z-10">
+                    <span class="text-sm font-bold text-slate-400 uppercase tracking-[0.2em] flex items-center">
+                        總流動資產 (Liquid Assets)
+                        <i class="fa-solid fa-circle-info text-[10px] ml-2 opacity-50" title="現金 + 股票 - 信用卡負債"></i>
+                    </span>
+                    <div class="my-3 md:my-4 flex items-baseline gap-2">
+                        <span class="text-4xl md:text-6xl font-black text-emerald-400 tracking-tighter font-mono" id="liquid-assets-display">HK$ 0</span>
+                    </div>
+                </div>
+                <div class="border-t border-slate-700/50 pt-4 mt-5 grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 text-sm relative z-10">
+                    <div><span class="text-slate-500 block mb-1 font-medium text-xs md:text-sm">現金資產</span><span class="font-bold text-white font-mono text-base md:text-lg" id="cash-assets-display">HK$ 0</span></div>
+                    <div><span class="text-slate-500 block mb-1 font-medium text-xs md:text-sm">信用卡負債</span><span class="font-bold text-rose-400 font-mono text-base md:text-lg" id="cc-debt-display">HK$ 0</span></div>
+                    <div><span class="text-slate-500 block mb-1 font-medium text-xs md:text-sm">股票現值</span><span class="font-bold text-cyan-400 font-mono text-base md:text-lg" id="total-stocks-display">HK$ 0</span></div>
+                    <div><span class="text-slate-500 block mb-1 font-medium text-xs md:text-sm">按揭未還</span><span class="font-bold text-slate-500 font-mono text-base md:text-lg" id="mortgage-balance-display">HK$ 0</span></div>
+                </div>
+            </div>
+
+            <div class="glass-panel p-5 md:p-8 rounded-3xl flex flex-col justify-center">
+                <h3 class="text-sm font-bold text-slate-300 mb-5 tracking-widest uppercase flex items-center"><i class="fa-solid fa-chart-pie text-purple-400 mr-2"></i> 負債與安全雷達</h3>
+                <div class="mb-5">
+                    <div class="flex justify-between text-xs md:text-sm mb-1.5"><span class="text-slate-400">總負債佔總資產比率</span><span class="font-bold font-mono" id="debt-ratio-text">0%</span></div>
+                    <div class="w-full h-2 bg-slate-800 rounded-full overflow-hidden"><div id="debt-ratio-bar" class="h-full bg-gradient-to-r from-cyan-400 to-blue-500 transition-all duration-700" style="width:0%"></div></div>
+                </div>
+                <div>
+                    <div class="flex justify-between text-xs md:text-sm mb-1.5"><span class="text-slate-400">信用卡額度佔用率</span><span class="font-bold font-mono text-amber-400" id="card-util-text">0%</span></div>
+                    <div class="w-full h-2 bg-slate-800 rounded-full overflow-hidden"><div id="card-util-bar" class="h-full bg-gradient-to-r from-emerald-400 via-amber-400 to-rose-500 transition-all duration-700" style="width:0%"></div></div>
+                </div>
+            </div>
+        </section>
+
+        <section class="glass-panel p-4 md:p-6 rounded-3xl w-full relative overflow-hidden">
+            <div class="absolute top-0 right-0 w-32 h-32 md:w-48 md:h-48 bg-orange-500/5 rounded-bl-full pointer-events-none"></div>
+            <div class="flex justify-between items-center mb-4 relative z-10 pl-1 md:pl-2">
+                <h2 class="text-base md:text-lg font-bold text-white tracking-wide flex items-center">
+                    <i class="fa-solid fa-receipt text-orange-400 mr-2 md:mr-3"></i>流水帳紀錄表
+                    <span class="hidden md:inline-block bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded text-[10px] ml-3 border border-emerald-500/30 font-medium"><i class="fa-solid fa-robot mr-1"></i>全自動連動餘額</span>
+                </h2>
+                <button onclick="addNewExpenseRow()" class="px-3 py-1.5 md:px-4 md:py-2 bg-orange-500 hover:bg-orange-400 text-slate-950 font-black rounded-lg text-xs md:text-sm transition-all shadow-[0_0_15px_rgba(249,115,22,0.4)] whitespace-nowrap">
+                    <i class="fa-solid fa-plus mr-1"></i> 記一筆
+                </button>
+            </div>
+            
+            <div class="mobile-table-wrapper max-h-[400px] md:max-h-[600px] rounded-xl border border-slate-700/50 relative z-10 shadow-inner table-min-w">
+                <table class="w-full text-left text-xs md:text-sm border-collapse whitespace-nowrap">
+                    <thead class="sticky top-0 bg-slate-800 z-20 shadow-md">
+                        <tr class="text-slate-300">
+                            <th class="py-3 px-3 font-semibold min-w-[110px]">日期</th>
+                            <th class="py-3 px-2 font-semibold min-w-[70px]">收支</th>
+                            <th class="py-3 px-2 font-semibold min-w-[90px]">分類</th>
+                            <th class="py-3 px-2 font-semibold min-w-[200px]">支付方式 / 轉帳流向</th>
+                            <th class="py-3 px-2 font-semibold min-w-[120px]">內容/備註</th>
+                            <th class="py-3 px-3 font-semibold text-right min-w-[100px]">金額 (HK$)</th>
+                            <th class="py-3 px-2 font-semibold text-center min-w-[50px]">刪除</th>
+                        </tr>
+                    </thead>
+                    <tbody id="expenses-table-body" class="divide-y divide-slate-700/50 bg-slate-900/40"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+            <div class="xl:col-span-2 glass-panel p-4 md:p-6 rounded-3xl">
+                <div class="flex justify-between items-center mb-4 pl-1 md:pl-2">
+                    <h2 class="text-base md:text-lg font-bold text-white tracking-wide flex items-center">
+                        <i class="fa-solid fa-building-columns text-cyan-400 mr-2 md:mr-3"></i>跨機構資產明細 
+                    </h2>
+                    <button onclick="addNewAccountRow()" class="px-2 py-1.5 md:px-3 md:py-1.5 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 rounded-lg text-xs md:text-sm transition-all font-medium whitespace-nowrap">
+                        <i class="fa-solid fa-plus mr-1"></i> 新增帳戶
+                    </button>
+                </div>
+                <div class="mobile-table-wrapper rounded-xl border border-slate-700/50 table-min-w">
+                    <table class="w-full text-left text-xs md:text-sm border-collapse whitespace-nowrap">
+                        <thead class="bg-slate-800/50">
+                            <tr class="text-slate-400">
+                                <th class="py-3 px-3 font-semibold min-w-[90px]">機構</th>
+                                <th class="py-3 px-2 font-semibold min-w-[120px]">帳戶名稱</th>
+                                <th class="py-3 px-2 font-semibold min-w-[90px]">類型</th>
+                                <th class="py-3 px-2 font-semibold min-w-[70px]">幣別</th>
+                                <th class="py-3 px-3 font-semibold text-right min-w-[140px]">當前餘額</th>
+                                <th class="py-3 px-2 font-semibold text-center min-w-[50px]">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="accounts-table-body" class="divide-y divide-slate-700/50 bg-slate-900/20"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="glass-panel p-5 md:p-6 rounded-3xl flex flex-col items-center justify-between relative overflow-hidden">
+                <div class="w-full text-left pl-2 mb-2"><h2 class="text-base md:text-lg font-bold text-white tracking-wide"><i class="fa-solid fa-droplet text-blue-400 mr-2"></i>現金池分布</h2></div>
+                <div class="relative w-40 h-40 md:w-48 md:h-48 my-2 md:my-4"><canvas id="cashPoolChart"></canvas></div>
+                
+                <div id="cash-pool-display-box" class="w-full bg-slate-900 border border-slate-700 p-3 md:p-4 rounded-xl text-center transition duration-300 shadow-inner mt-2">
+                    <span class="text-slate-400 text-[10px] md:text-xs block mb-1" id="cash-pool-title-label">淨流動儲備 (已預扣卡費)：</span>
+                    <span class="font-black text-lg md:text-xl font-mono" id="cash-pool-total-display">HK$ 0</span>
+                </div>
+            </div>
+        </section>
+
+        <section class="glass-panel p-4 md:p-6 rounded-3xl w-full hidden" id="credit-card-radar-section">
+            <div class="flex items-center mb-4 pl-1 md:pl-2">
+                <h2 class="text-base md:text-lg font-bold text-white tracking-wide flex items-center flex-wrap gap-2">
+                    <span><i class="fa-regular fa-credit-card text-amber-400 mr-2"></i>信用卡計費週期雷達</span>
+                    <span class="text-[10px] md:text-xs text-slate-400 bg-slate-800 px-2 py-0.5 rounded border border-slate-700">自動推算本期帳單</span>
+                </h2>
+            </div>
+            <div id="credit-card-cycle-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4"></div>
+        </section>
+
+        <section class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div class="glass-panel p-5 md:p-6 rounded-3xl">
+                <div class="flex justify-between items-center mb-5 pl-1 md:pl-2">
+                    <h2 class="text-base md:text-lg font-bold text-white tracking-wide"><i class="fa-solid fa-bullseye text-purple-400 mr-2 md:mr-3"></i>當月分類預算分析</h2>
+                </div>
+                <div class="mb-5 bg-slate-900/80 p-4 rounded-2xl border border-slate-700/50 shadow-inner">
+                    <div class="flex justify-between text-xs md:text-sm mb-2 md:mb-3">
+                        <span class="text-slate-300 font-medium" id="budget-month-label">本月總支出</span>
+                        <span class="font-bold text-white font-mono" id="budget-spent-text">HK$ 0 / HK$ 0</span>
+                    </div>
+                    <div class="w-full h-2.5 md:h-3 bg-slate-800 rounded-full overflow-hidden mb-2">
+                        <div id="budget-progress-bar" class="h-full bg-purple-500 transition-all duration-700" style="width:0%"></div>
+                    </div>
+                    <div class="text-[10px] md:text-xs text-right font-mono font-bold tracking-wide" id="budget-status-text">剩
