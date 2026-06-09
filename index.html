@@ -197,12 +197,14 @@
             document.getElementById('pwd-input').value='';document.getElementById('pwd-confirm').value='';
         }
 
-        function initApp(){fails=parseInt(lsGet('cw_f','0'))||0;lockTime=parseInt(lsGet('cw_l','0'))||0;if(lockTime&&lockTime<=Date.now()){lockTime=0;lsDel('cw_l')}updateLockUI();checkLock()}
+        function initApp(){try{fails=parseInt(lsGet('cw_f','0'))||0;lockTime=parseInt(lsGet('cw_l','0'))||0;if(lockTime&&lockTime<=Date.now()){lockTime=0;lsDel('cw_l')}updateLockUI();checkLock()}catch(e){console.error(e);alert('程式初始化失敗：'+e.message)}}
 
         function checkLock(){let n=Date.now();if(lockTime>n)lockUI(lockTime-n);else{if(fails>=5){fails=0;lsSet('cw_f','0')}unlockUI()}}
 
         function login(){
-            if(lockTime>Date.now()){checkLock();return}
+            try{
+            if(typeof CryptoJS==='undefined')return alert('加密程式庫載入失敗，請重新整理頁面或檢查網絡');
+            if(lockTime>Date.now()){checkLock();document.getElementById('lock-msg').style.display='block';return}
             let pwd=document.getElementById('pwd-input').value,cf=document.getElementById('pwd-confirm').value;
             if(!pwd)return alert('請輸入密碼');if(pwd.length<6)return alert('密碼至少需要 6 個字元');
             if(!hasVault()){
@@ -214,6 +216,7 @@
             let dec=decryptData(pwd,lsGet(VAULT_KEY));
             if(!dec){fails++;lsSet('cw_f',fails);if(fails>=5){lockTime=Date.now()+180000;lsSet('cw_l',lockTime);checkLock();alert('密碼錯誤 5 次，系統已鎖定 3 分鐘')}else alert(`密碼錯誤！剩餘 ${5-fails} 次`);return}
             masterPwd=pwd;D=normalizeData(dec);fails=0;lockTime=0;lsSet('cw_f','0');lsDel('cw_l');enterDashboard();
+            }catch(err){console.error(err);alert('登入失敗：'+err.message)}
         }
 
         function saveVault(){if(!masterPwd)return false;return lsSet(VAULT_KEY,encryptData(masterPwd,D))}
@@ -269,8 +272,8 @@
         function bankTotals(items){
             let cash=0,cc=0,loan=0,curBr={};
             items.cash.forEach(({a})=>{cash+=toHKD(a.bal,a.cur);curBr[a.cur]=(curBr[a.cur]||0)+pNum(a.bal)});
-            items.card.forEach(({a})=>cc+=Math.abs(Math.min(0,toHKD(a.bal,a.cur)));
-            items.loan.forEach(({a})=>loan+=Math.abs(Math.min(0,toHKD(a.bal,a.cur)));
+            items.card.forEach(({a})=>{cc+=Math.abs(Math.min(0,toHKD(a.bal,a.cur)))});
+            items.loan.forEach(({a})=>{loan+=Math.abs(Math.min(0,toHKD(a.bal,a.cur)))});
             return{cash,cc,loan,net:cash-cc-loan,curBr};
         }
 
