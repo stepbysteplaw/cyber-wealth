@@ -2,78 +2,579 @@
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CyberWealth - 財富總覽</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>CyberWealth - 智慧理財主控台</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/crypto-js@4.2.0/crypto-js.min.js"></script>
+    <script>tailwind.config={theme:{extend:{fontFamily:{sans:['Inter','sans-serif'],mono:['JetBrains Mono','monospace']}}}}</script>
+    <style>
+        body{background-color:#020617;-webkit-text-size-adjust:100%;color:#cbd5e1;font-size:13px}
+        .glass{background:rgba(15,23,42,.85);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.06)}
+        .bank-card{background:rgba(15,23,42,.7);border:1px solid rgba(51,65,85,.5)}
+        .section-h{font-size:13px;font-weight:600;color:#f1f5f9}
+        .amt{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;letter-spacing:-.02em}
+        .amt-lg{font-size:clamp(1.25rem,4vw,1.75rem);font-weight:800;letter-spacing:-.03em}
+        .acc-row{display:flex;align-items:center;gap:6px;padding:7px 12px;border-bottom:1px solid rgba(51,65,85,.35);font-size:11px}
+        .acc-row:last-child{border-bottom:none}
+        .acc-row:hover{background:rgba(30,41,59,.2)}
+        .acc-edit{display:none;padding:6px 12px 8px;background:rgba(2,6,23,.35);border-bottom:1px solid rgba(51,65,85,.25);font-size:10px;gap:6px;flex-wrap:wrap}
+        .acc-edit.open{display:flex}
+        .badge{display:inline-block;padding:1px 6px;border-radius:4px;font-size:9px;font-weight:600;background:rgba(51,65,85,.5);color:#94a3b8}
+        .fld{background:rgba(2,6,23,.6);border:1px solid transparent;border-radius:4px;padding:2px 6px;font-size:11px;outline:none}
+        .fld:focus{border-color:rgba(34,211,238,.4)}
+        input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+        ::-webkit-scrollbar{width:4px;height:6px}::-webkit-scrollbar-thumb{background:#475569;border-radius:4px}
+        .scroll-box{overflow-x:auto;-webkit-overflow-scrolling:touch}
+        .metric-bar{transition:width .4s ease}
+    </style>
 </head>
-<body class="bg-slate-950 text-slate-200 p-4">
+<body onload="initApp()" class="p-3 md:p-6">
 
-    <div id="login-ui" class="fixed inset-0 flex items-center justify-center bg-slate-950 z-50">
-        <div class="bg-slate-900 p-8 rounded-2xl w-full max-w-sm text-center border border-slate-800">
-            <h2 class="text-xl font-bold mb-4">系統登入</h2>
-            <input type="password" id="pw-field" placeholder="輸入密碼" class="w-full bg-slate-800 p-3 rounded-lg mb-4 text-center text-white border border-slate-700">
-            <button onclick="login()" class="w-full py-3 bg-cyan-600 rounded-lg font-bold">進入</button>
+    <div id="lock-screen" class="fixed inset-0 bg-[#020617] z-50 flex flex-col items-center justify-center p-4">
+        <div class="max-w-sm w-full glass p-8 rounded-3xl text-center shadow-2xl">
+            <i class="fa-solid fa-shield-halved text-cyan-400 text-4xl mb-4 block"></i>
+            <h2 id="lock-title" class="text-xl font-bold text-white mb-2 tracking-widest">系統解鎖</h2>
+            <p id="lock-desc" class="text-xs text-slate-400 mb-6">輸入你的專屬密碼解鎖資料。錯誤 5 次將鎖定 3 分鐘。</p>
+            <div class="relative w-full mb-4">
+                <input type="password" id="pwd-input" placeholder="輸入密碼" onkeydown="if(event.key==='Enter')login()"
+                    class="w-full bg-slate-900 border-2 border-slate-700 rounded-xl p-4 text-center text-white font-mono tracking-widest focus:border-cyan-400 outline-none">
+                <i class="fa-solid fa-eye absolute right-4 top-5 text-slate-500 cursor-pointer" onclick="togglePwd(this,'pwd-input')"></i>
+            </div>
+            <div id="pwd-confirm-wrap" class="relative w-full mb-4 hidden">
+                <input type="password" id="pwd-confirm" placeholder="再次確認密碼" onkeydown="if(event.key==='Enter')login()"
+                    class="w-full bg-slate-900 border-2 border-slate-700 rounded-xl p-4 text-center text-white font-mono tracking-widest focus:border-cyan-400 outline-none">
+                <i class="fa-solid fa-eye absolute right-4 top-5 text-slate-500 cursor-pointer" onclick="togglePwd(this,'pwd-confirm')"></i>
+            </div>
+            <button type="button" id="login-btn" onclick="login()" class="w-full py-4 bg-cyan-600 hover:bg-cyan-500 text-white font-black rounded-xl transition shadow-lg mb-2">進入主控台</button>
+            <p id="lock-msg" class="text-rose-500 text-xs font-bold hidden"></p>
+            <p id="login-status" class="text-[10px] text-slate-600 mt-1"></p>
+            <button type="button" onclick="toggleBackupCodePanel()" class="mt-3 text-[10px] text-cyan-400/90 hover:text-cyan-300 underline">📋 手機同步：貼上備份碼</button>
+            <div id="backup-code-panel" class="hidden mt-3 text-left">
+                <p class="text-[9px] text-slate-500 mb-1">在電腦按「複製備份碼」，再貼到下面（仍需輸入密碼解鎖）</p>
+                <textarea id="backup-code-input" rows="4" placeholder="貼上 CW4: 開頭的備份碼…" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-[10px] font-mono text-slate-300 outline-none focus:border-cyan-500"></textarea>
+                <button type="button" onclick="importBackupCode()" class="mt-2 w-full py-2 bg-slate-800 hover:bg-slate-700 text-cyan-300 text-xs font-bold rounded-lg">匯入備份碼</button>
+            </div>
+            <p class="text-[10px] text-slate-600 mt-3">🔒 資料以 AES 加密儲存於本機，密碼不會寫入程式碼</p>
         </div>
     </div>
 
-    <div id="main-ui" class="hidden space-y-4">
-        <h1 class="text-lg font-bold text-white">財富總覽</h1>
-        
-        <div class="bg-slate-900 p-6 rounded-2xl border border-slate-800">
-            <div class="text-xs text-slate-400">總流動淨資產 (現金 + 股票)</div>
-            <div id="v-liquid" class="text-3xl font-black text-emerald-400 my-1">HK$ 0</div>
-            <div class="mt-4 pt-4 border-t border-slate-800 text-xs grid grid-cols-2 gap-2">
-                <div>負債總額：<span id="v-loan" class="text-rose-400 font-bold">0</span></div>
-            </div>
-        </div>
+    <div id="main-content" class="max-w-[1100px] w-full mx-auto hidden opacity-0 transition-opacity duration-500 space-y-4">
 
-        <div class="bg-slate-900 p-4 rounded-2xl border border-slate-800">
-            <h2 class="text-sm font-bold mb-3 text-slate-400">各幣種存款</h2>
-            <div id="v-currencies" class="space-y-2"></div>
-        </div>
+        <header class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 pb-4 border-b border-slate-800">
+            <div>
+                <h1 class="text-2xl font-black text-white tracking-widest"><i class="fa-solid fa-bolt text-cyan-400 mr-2"></i>CYBERWEALTH</h1>
+                <p class="text-[10px] text-emerald-400">多幣別 · 銀行分組 · 帳戶連動記帳</p>
+            </div>
+            <div class="flex flex-wrap gap-2 items-center">
+                <span id="backup-hint" class="text-[10px] text-amber-400/80 hidden"></span>
+                <button onclick="exportBackup()" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-xs font-bold"><i class="fa-solid fa-download text-cyan-400"></i> 下載備份</button>
+                <button onclick="exportBackupCode()" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-xs font-bold"><i class="fa-solid fa-copy text-purple-400"></i> 複製備份碼</button>
+                <button onclick="document.getElementById('import-file').click()" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-xs font-bold"><i class="fa-solid fa-upload text-emerald-400"></i> 匯入檔案</button>
+                <input type="file" id="import-file" class="hidden" accept=".json,.cwbackup" onchange="importBackup(this)">
+                <button onclick="lock()" class="px-3 py-2 bg-slate-800 rounded-lg text-xs font-bold"><i class="fa-solid fa-lock text-rose-400"></i> 鎖定</button>
+            </div>
+        </header>
+
+        <!-- 總覽 -->
+        <section class="grid grid-cols-1 lg:grid-cols-3 gap-3">
+            <div class="lg:col-span-2 glass p-4 md:p-5 rounded-xl">
+                <span class="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">總淨資產（折合 HKD）</span>
+                <div class="amt-lg text-emerald-400 font-mono my-1" id="v-net">HK$ 0</div>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-2 mt-3 pt-3 border-t border-slate-700/60">
+                    <div class="bg-slate-900/40 rounded-lg px-2.5 py-2"><span class="block text-[9px] text-slate-500 mb-0.5">現金存款</span><span id="v-cash" class="amt text-white">0</span></div>
+                    <div class="bg-slate-900/40 rounded-lg px-2.5 py-2"><span class="block text-[9px] text-slate-500 mb-0.5">股票現值</span><span id="v-stock" class="amt text-cyan-400">0</span></div>
+                    <div class="bg-slate-900/40 rounded-lg px-2.5 py-2"><span class="block text-[9px] text-slate-500 mb-0.5">信用卡待還</span><span id="v-cc" class="amt text-rose-400">0</span></div>
+                    <div class="bg-slate-900/40 rounded-lg px-2.5 py-2"><span class="block text-[9px] text-slate-500 mb-0.5">貸款未還</span><span id="v-loan" class="amt text-amber-400">0</span></div>
+                </div>
+            </div>
+            <div class="glass p-4 rounded-xl space-y-3 text-xs">
+                <div>
+                    <div class="flex justify-between mb-1 text-xs"><span class="text-slate-400">本月支出 / 預算</span><span id="v-month-spend" class="font-mono text-rose-300">0 / 0</span></div>
+                    <div class="h-2.5 bg-slate-800 rounded-full overflow-hidden"><div id="v-month-bar" class="metric-bar h-full bg-rose-500 rounded-full" style="width:0%"></div></div>
+                    <p id="v-month-left" class="text-[10px] text-slate-500 mt-1">尚餘預算 —</p>
+                </div>
+                <div>
+                    <div class="flex justify-between mb-1 text-xs"><span class="text-slate-400">本月收入</span><span id="v-month-in" class="font-mono text-emerald-400">0</span></div>
+                </div>
+                <div>
+                    <div class="flex justify-between mb-1 text-xs"><span class="text-slate-400">流動資金（現金－卡債）</span><span id="v-liquid" class="font-mono text-cyan-300">0</span></div>
+                </div>
+                <div class="pt-2 border-t border-slate-800">
+                    <p class="text-[10px] text-slate-500 mb-2"><i class="fa-solid fa-coins text-amber-400 mr-1"></i>匯率設定（→ HKD）</p>
+                    <div id="v-fx" class="grid grid-cols-3 gap-1 text-[10px] font-mono"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 記帳本 -->
+        <section class="glass p-4 rounded-2xl">
+            <div class="flex justify-between items-center mb-3">
+                <h2 class="font-bold text-white text-sm"><i class="fa-solid fa-receipt text-orange-400 mr-2"></i>自動連動記帳本</h2>
+                <button onclick="addExp()" class="px-3 py-1 bg-orange-500 text-black font-bold text-xs rounded-lg">＋ 記一筆</button>
+            </div>
+            <p class="text-[10px] text-slate-500 mb-2">信用卡消費 → 卡債增加｜儲蓄還卡 → 選「轉帳」連動兩個戶口</p>
+            <div class="scroll-box max-h-[420px]">
+                <table class="w-full text-left text-xs whitespace-nowrap">
+                    <thead class="bg-slate-800 sticky top-0 z-10"><tr class="text-slate-400 *:py-2 *:px-2"><th>日期</th><th>類型</th><th>分類</th><th>帳戶/轉帳</th><th>備註</th><th class="text-right">金額</th><th></th></tr></thead>
+                    <tbody id="tb-exp" class="divide-y divide-slate-700/50"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- 各銀行總覽 -->
+        <section>
+            <h2 class="section-h mb-2"><i class="fa-solid fa-building-columns text-cyan-400 mr-1.5 text-xs"></i>各銀行資產總覽</h2>
+            <div id="v-banks" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2"></div>
+        </section>
+
+        <!-- 資產帳戶（分組） -->
+        <section class="space-y-3">
+            <div class="flex justify-between items-center">
+                <h2 class="section-h"><i class="fa-solid fa-wallet text-emerald-400 mr-1.5 text-xs"></i>資產帳戶</h2>
+                <button onclick="addAcc()" class="text-[10px] text-cyan-400 border border-cyan-800 px-2 py-1 rounded hover:bg-cyan-950">＋ 新增</button>
+            </div>
+            <div id="v-acc-groups" class="space-y-4"></div>
+        </section>
+
+        <section class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div class="glass p-4 rounded-2xl">
+                <h2 class="font-bold text-white mb-2 text-sm"><i class="fa-solid fa-bullseye text-purple-400 mr-2"></i>分類預算（排除轉帳）</h2>
+                <div id="v-budget" class="space-y-2"></div>
+            </div>
+            <div class="glass p-4 rounded-2xl">
+                <div class="flex justify-between items-center mb-3">
+                    <h2 class="font-bold text-white text-sm"><i class="fa-solid fa-arrow-trend-up text-emerald-400 mr-2"></i>持股</h2>
+                    <button onclick="addStk()" class="text-xs text-emerald-400 border border-emerald-700 px-2 py-1 rounded">新增</button>
+                </div>
+                <div class="scroll-box"><table class="w-full text-xs whitespace-nowrap"><tbody id="tb-stk"></tbody></table></div>
+            </div>
+        </section>
     </div>
 
     <script>
-        // 模擬數據結構 (你可以隨時修改這裡)
-        let data = {
-            acc: [
-                { name: 'HSBC', bal: 50000, cur: 'HKD', type: 'CASH' },
-                { name: 'Citi', bal: 1200, cur: 'USD', type: 'CASH' },
-                { name: '貸款', bal: -20000, cur: 'HKD', type: 'LOAN' }
+        window.onerror=function(msg,src,line){let s=document.getElementById('login-status');if(s)s.textContent='程式錯誤：'+msg;console.error(msg,src,line);return false};
+        const VAULT_KEY='cw_vault_v4', BACKUP_DAYS=7;
+        let masterPwd='', fails=0, lockTime=0, timer;
+        let D={acc:[],exp:[],stk:[],bg:{FOOD:3000,TRANSPORT:1000,SHOPPING:2000,MORTGAGE:5000,DAILY_BILLS:1500,OTHER:0},fx:{HKD:1,USD:7.8,JPY:0.052,RMB:1.08,EUR:8.5,GBP:9.8}};
+
+        const CM={FOOD:['餐飲','text-emerald-400',true],TRANSPORT:['交通','text-cyan-400',true],SHOPPING:['購物','text-purple-400',true],MORTGAGE:['按揭','text-amber-400',true],DAILY_BILLS:['繳費','text-rose-400',true],OTHER:['轉帳/其他','text-slate-500',false]};
+        const SUB={SAVINGS:'儲蓄戶口',CHECKING:'支票戶口',FOREIGN:'外幣戶口',CARD:'信用卡',LOAN:'貸款'};
+        const CURS=['HKD','USD','JPY','RMB','EUR','GBP'];
+        const TYPES={OUT:'支出',IN:'收入',TRANSFER:'轉帳'};
+        const inp=`bg-transparent border-b border-transparent focus:border-cyan-400 focus:outline-none w-full font-mono`;
+        const sel=`bg-slate-900 border border-slate-700 rounded px-1 py-1 text-[11px] focus:outline-none`;
+
+        function lsGet(k,d=''){try{return localStorage.getItem(k)??d}catch(e){return d}}
+        function lsSet(k,v){try{localStorage.setItem(k,v);return true}catch(e){return false}}
+        function lsDel(k){try{localStorage.removeItem(k)}catch(e){}}
+        function hasVault(){let v=lsGet(VAULT_KEY);return !!(v&&v.length>10)}
+        function escAttr(s){return String(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+        function showLockMsg(t,isErr){let m=document.getElementById('lock-msg');if(!m)return;m.textContent=t;m.classList.toggle('hidden',!t);m.classList.toggle('text-rose-500',!!isErr);m.classList.toggle('text-emerald-400',!isErr&&!!t)}
+        function fNum(n){return(parseFloat(n)||0).toLocaleString('en-US',{maximumFractionDigits:2})}
+        function pNum(s){return parseFloat(String(s).replace(/,/g,''))||0}
+        function toHKD(amt,cur){return pNum(amt)*(D.fx[cur]||D.fx.HKD||1)}
+        function fmtHKD(n){return'HK$ '+fNum(n)}
+        function fmtBal(a){return fNum(a.bal)+' '+a.cur+(a.cur!=='HKD'?` <span class="text-slate-500 text-[9px]">(≈${fNum(toHKD(a.bal,a.cur))})</span>`:'')}
+
+        function defaultData(){return{
+            acc:[
+                {id:1,inst:'HSBC',name:'HSBC 儲蓄',type:'CASH',sub:'SAVINGS',cur:'HKD',bal:80000,lim:0,day:null},
+                {id:2,inst:'HSBC',name:'HSBC 美元',type:'CASH',sub:'FOREIGN',cur:'USD',bal:5000,lim:0,day:null},
+                {id:3,inst:'HSBC',name:'HSBC 信用卡',type:'CARD',sub:'CARD',cur:'HKD',bal:-12000,lim:80000,day:15},
+                {id:4,inst:'SCB',name:'渣打儲蓄',type:'CASH',sub:'SAVINGS',cur:'HKD',bal:150000,lim:0,day:null},
+                {id:5,inst:'SCB',name:'渣打日圓',type:'CASH',sub:'FOREIGN',cur:'JPY',bal:200000,lim:0,day:null}
             ],
-            stk: [{ val: 15000 }] // 股票價值
-        };
+            exp:[{id:1,date:new Date().toISOString().split('T')[0],t:'OUT',cat:'FOOD',pg:'CARD',pm:'HSBC 信用卡',to:'',ds:'午餐',amt:120}],
+            stk:[{id:1,inst:'FUTU',code:'0700',sh:100,cost:300,cur:380}],
+            bg:{FOOD:3000,TRANSPORT:1000,SHOPPING:2000,MORTGAGE:5000,DAILY_BILLS:1500,OTHER:0},
+            fx:{HKD:1,USD:7.8,JPY:0.052,RMB:1.08,EUR:8.5,GBP:9.8}
+        }}
 
-        function login() {
-            if (document.getElementById('pw-field').value === "Step0926") {
-                document.getElementById('login-ui').style.display = 'none';
-                document.getElementById('main-ui').style.display = 'block';
-                render();
-            } else { alert('密碼錯誤'); }
-        }
-
-        function render() {
-            let cashTotal = 0, loanTotal = 0, currencies = {};
-
-            data.acc.forEach(a => {
-                if (a.type === 'LOAN') {
-                    loanTotal += Math.abs(a.bal);
-                } else {
-                    cashTotal += a.bal; // 這裡假設 HKD 為主，其他貨幣後續可加入匯率計算
-                    currencies[a.cur] = (currencies[a.cur] || 0) + a.bal;
-                }
+        function normalizeData(src){
+            let d=src||defaultData();
+            if(!d.acc)d.acc=[];if(!d.exp)d.exp=[];if(!d.stk)d.stk=[];
+            if(!d.bg)d.bg={FOOD:3000,TRANSPORT:1000,SHOPPING:2000,MORTGAGE:5000,DAILY_BILLS:1500,OTHER:0};
+            if(!d.fx)d.fx={HKD:1,USD:7.8,JPY:0.052,RMB:1.08,EUR:8.5,GBP:9.8};
+            d.acc.forEach(a=>{
+                if(!a.cur)a.cur='HKD';
+                if(!a.sub)a.sub=a.type==='CARD'?'CARD':a.type==='LOAN'?'LOAN':(a.cur!=='HKD'?'FOREIGN':'SAVINGS');
+                if(a.lim===undefined)a.lim=0;
             });
-
-            // 顯示數據
-            document.getElementById('v-liquid').innerText = `HK$ ${(cashTotal + data.stk[0].val).toLocaleString()}`;
-            document.getElementById('v-loan').innerText = `HK$ ${loanTotal.toLocaleString()}`;
-            
-            let curHtml = '';
-            for (let c in currencies) {
-                curHtml += `<div class="flex justify-between font-mono"><span>${c}</span><span>${currencies[c].toLocaleString()}</span></div>`;
-            }
-            document.getElementById('v-currencies').innerHTML = curHtml;
+            return d;
         }
+
+        function encryptData(pwd,data){return CryptoJS.AES.encrypt(JSON.stringify(data),pwd).toString()}
+        function decryptData(pwd,cipher){try{let t=CryptoJS.AES.decrypt(cipher,pwd).toString(CryptoJS.enc.Utf8);return t?JSON.parse(t):null}catch(e){return null}}
+        function migratePlaintext(){let r=lsGet('cw_db_v3');if(!r)return null;try{return normalizeData(JSON.parse(r))}catch(e){return null}}
+
+        function updateLockUI(clearPwd){
+            let s=!hasVault();
+            document.getElementById('lock-title').innerText=s?'首次設定密碼':'系統解鎖';
+            document.getElementById('lock-desc').innerText=s?'請設定密碼（至少 6 字），並在下方兩格輸入相同密碼。':'輸入你的專屬密碼解鎖資料。錯誤 5 次將鎖定 3 分鐘。';
+            document.getElementById('pwd-confirm-wrap').classList.toggle('hidden',!s);
+            document.getElementById('login-btn').innerText=s?'設定密碼並進入':'進入主控台';
+            document.getElementById('pwd-input').placeholder=s?'設定新密碼':'輸入密碼';
+            if(clearPwd){document.getElementById('pwd-input').value='';document.getElementById('pwd-confirm').value=''}
+            let st=document.getElementById('login-status');
+            if(st)st.textContent=typeof CryptoJS==='undefined'?'⚠️ 加密程式庫未載入，請重新整理':(s?'首次使用：請設定密碼':'程式就緒，請輸入密碼');
+        }
+
+        function initApp(){try{fails=parseInt(lsGet('cw_f','0'))||0;lockTime=parseInt(lsGet('cw_l','0'))||0;if(lockTime&&lockTime<=Date.now()){lockTime=0;lsDel('cw_l')}updateLockUI(true);checkLock()}catch(e){console.error(e);alert('程式初始化失敗：'+e.message)}}
+
+        function checkLock(){let n=Date.now();if(lockTime>n)lockUI(lockTime-n);else{if(fails>=5){fails=0;lsSet('cw_f','0')}unlockUI()}}
+
+        function login(){
+            try{
+            if(typeof CryptoJS==='undefined'){showLockMsg('加密程式庫載入失敗，請重新整理',true);return alert('加密程式庫載入失敗，請重新整理頁面')}
+            if(lockTime>Date.now()){checkLock();showLockMsg('帳戶已鎖定，請稍候',true);return}
+            let pwd=document.getElementById('pwd-input').value,cf=document.getElementById('pwd-confirm').value;
+            if(!pwd)return showLockMsg('請輸入密碼',true);
+            if(pwd.length<6)return showLockMsg('密碼至少需要 6 個字元',true);
+            if(!hasVault()){
+                if(!cf)cf=pwd;
+                if(pwd!==cf)return showLockMsg('兩次密碼不一致，請重新輸入',true);
+                masterPwd=pwd;let m=migratePlaintext();D=normalizeData(m||defaultData());
+                if(!saveVault())return showLockMsg('無法儲存資料，請檢查瀏覽器儲存空間',true);
+                if(m)lsDel('cw_db_v3');
+                fails=0;lockTime=0;lsSet('cw_f','0');lsDel('cw_l');enterDashboard();return;
+            }
+            let dec=decryptData(pwd,lsGet(VAULT_KEY));
+            if(!dec){
+                fails++;lsSet('cw_f',fails);
+                if(fails>=5){lockTime=Date.now()+180000;lsSet('cw_l',lockTime);checkLock();showLockMsg('密碼錯誤 5 次，已鎖定 3 分鐘',true)}
+                else showLockMsg(`密碼錯誤，剩餘 ${5-fails} 次`,true);
+                return;
+            }
+            masterPwd=pwd;D=normalizeData(dec);saveVault();
+            fails=0;lockTime=0;lsSet('cw_f','0');lsDel('cw_l');enterDashboard();
+            }catch(err){console.error(err);showLockMsg('登入失敗：'+err.message,true);alert('登入失敗：'+err.message)}
+        }
+
+        function saveVault(){if(!masterPwd)return false;return lsSet(VAULT_KEY,encryptData(masterPwd,D))}
+        function enterDashboard(){
+            showLockMsg('',false);
+            document.getElementById('lock-screen').style.display='none';
+            let m=document.getElementById('main-content');
+            m.classList.remove('hidden','opacity-0');
+            try{renderAll();updateBackupHint();checkBackupReminder()}
+            catch(e){console.error(e);alert('畫面載入失敗：'+e.message+'\n資料已解鎖，請重新整理頁面再用密碼登入')}
+        }
+
+        function updateBackupHint(){let el=document.getElementById('backup-hint'),l=lsGet('cw_last_backup');if(!l){el.classList.add('hidden');return}el.classList.remove('hidden');el.innerText='上次備份：'+l.slice(0,10)}
+        function checkBackupReminder(){let l=lsGet('cw_last_backup');if(!l){setTimeout(()=>{if(confirm('建議立即匯出第一份加密備份。現在匯出？'))exportBackup()},800);return}if((Date.now()-new Date(l).getTime())/86400000>=BACKUP_DAYS)setTimeout(()=>{if(confirm(`已超過 ${BACKUP_DAYS} 天未備份，建議現在匯出。`))exportBackup()},800)}
+
+        function toBackupCode(cipher){
+            let payload={v:4,d:cipher,t:Date.now()};
+            return 'CW4:'+btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
+        }
+        function fromBackupCode(raw){
+            let code=(raw||'').trim().replace(/\s+/g,'');
+            if(!code)throw new Error('請貼上備份碼');
+            if(code.startsWith('{')){let p=JSON.parse(code);let c=p.data||p.d||p;if(typeof c!=='string')throw new Error('格式錯誤');return c}
+            if(code.startsWith('CW4:'))code=code.slice(4);
+            let p=JSON.parse(decodeURIComponent(escape(atob(code))));
+            let c=p.d||p.data;if(typeof c!=='string')throw new Error('格式錯誤');return c;
+        }
+        function applyImportedVault(c){
+            if(hasVault()&&masterPwd&&!decryptData(masterPwd,c)){
+                if(!confirm('此備份與目前密碼不符，仍要覆蓋本機資料嗎？'))return false;
+            }else if(hasVault()&&!confirm('匯入將覆蓋本機資料，確定？'))return false;
+            lsSet(VAULT_KEY,c);masterPwd='';lock();alert('備份已匯入！請用當初設定備份時的密碼登入。');return true;
+        }
+        function exportBackup(){
+            if(!masterPwd)return alert('請先解鎖');
+            saveVault();
+            let p={app:'CyberWealth',version:4,encrypted:true,exportedAt:new Date().toISOString(),data:lsGet(VAULT_KEY)};
+            let a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(p,null,2)]));
+            a.download='cyberwealth-backup-'+new Date().toISOString().slice(0,10)+'.cwbackup.json';a.click();URL.revokeObjectURL(a.href);
+            lsSet('cw_last_backup',new Date().toISOString());updateBackupHint();
+            alert('加密備份檔已下載。手機同步建議再用「複製備份碼」。');
+        }
+        function exportBackupCode(){
+            if(!masterPwd)return alert('請先解鎖');
+            saveVault();
+            let code=toBackupCode(lsGet(VAULT_KEY));
+            lsSet('cw_last_backup',new Date().toISOString());updateBackupHint();
+            if(navigator.clipboard&&navigator.clipboard.writeText){
+                navigator.clipboard.writeText(code).then(()=>alert('備份碼已複製！\n\n請貼到備忘錄/iCloud/微信自己，再到手機登入頁「貼上備份碼」。\n\n仍需用密碼解鎖，備份碼唔係密碼。')).catch(()=>showBackupCodeDialog(code));
+            }else showBackupCodeDialog(code);
+        }
+        function showBackupCodeDialog(code){
+            let ta=document.createElement('textarea');ta.value=code;ta.style.cssText='width:100%;height:120px;font-size:10px;margin-top:8px';
+            let msg='長按全選並複製此備份碼，貼到手機登入頁：\n\n（仍需密碼解鎖，備份碼唔係密碼）';
+            if(confirm(msg+'\n\n按「確定」後會顯示備份碼文字框')){document.body.appendChild(ta);ta.select();try{document.execCommand('copy')}catch(e){}ta.remove();alert('請手動複製備份碼')}
+        }
+        function toggleBackupCodePanel(){document.getElementById('backup-code-panel').classList.toggle('hidden')}
+        function importBackupCode(){
+            try{
+                let raw=document.getElementById('backup-code-input').value;
+                applyImportedVault(fromBackupCode(raw));
+            }catch(err){alert('匯入失敗：'+err.message)}
+        }
+        function importBackup(input){
+            let f=input.files[0];if(!f)return;
+            let rd=new FileReader();rd.onload=e=>{try{applyImportedVault(fromBackupCode(e.target.result))}catch(err){alert('匯入失敗：'+err.message)}input.value=''};rd.readAsText(f);
+        }
+
+        function lockUI(ms){let b=document.getElementById('login-btn'),i=document.getElementById('pwd-input');b.disabled=i.disabled=document.getElementById('pwd-confirm').disabled=true;i.value='';b.className="w-full py-4 bg-slate-800 text-slate-500 rounded-xl font-bold mb-2";clearInterval(timer);timer=setInterval(()=>{ms-=1000;if(ms<=0){clearInterval(timer);unlockUI()}else showLockMsg(`鎖定中，請等 ${Math.floor(ms/60000)}分 ${Math.floor((ms/1000)%60)}秒`,true)},1000)}
+        function unlockUI(){let b=document.getElementById('login-btn'),i=document.getElementById('pwd-input');b.disabled=i.disabled=document.getElementById('pwd-confirm').disabled=false;b.className="w-full py-4 bg-cyan-600 hover:bg-cyan-500 text-white font-black rounded-xl transition shadow-lg mb-2";updateLockUI(false);showLockMsg('',false)}
+        function togglePwd(el,id){let i=document.getElementById(id);if(i.type==='password'){i.type='text';el.classList.replace('fa-eye','fa-eye-slash')}else{i.type='password';el.classList.replace('fa-eye-slash','fa-eye')}}
+        function lock(){masterPwd='';document.getElementById('main-content').classList.add('hidden','opacity-0');document.getElementById('lock-screen').style.display='flex';updateLockUI(true)}
+        function saveDb(){if(!saveVault())alert('儲存失敗');renderAll()}
+
+        function applyBal(t,amt,fAcc,tAcc,rev=false){
+            let s=rev?-1:1;amt=pNum(amt);if(!amt)return;
+            let a1=D.acc.find(a=>a.name===fAcc),a2=D.acc.find(a=>a.name===tAcc);
+            if(t==='OUT'&&a1)a1.bal-=amt*s;
+            else if(t==='IN'&&a1)a1.bal+=amt*s;
+            else if(t==='TRANSFER'){if(a1)a1.bal-=amt*s;if(a2)a2.bal+=amt*s}
+        }
+
+        function calcTotals(){
+            let cash=0,cc=0,loan=0,stk=0,ccLim=0;
+            D.stk.forEach(s=>stk+=pNum(s.sh)*pNum(s.cur));
+            D.acc.forEach(a=>{
+                let h=toHKD(a.bal,a.cur);
+                if(a.type==='CASH')cash+=h;
+                else if(a.type==='CARD'){cc+=Math.abs(Math.min(0,h));ccLim+=toHKD(a.lim,a.cur)}
+                else loan+=Math.abs(Math.min(0,h));
+            });
+            let mStr=new Date().toISOString().slice(0,7);
+            let mOut=D.exp.filter(e=>e.date.startsWith(mStr)&&e.t==='OUT').reduce((s,e)=>s+pNum(e.amt),0);
+            let mIn=D.exp.filter(e=>e.date.startsWith(mStr)&&e.t==='IN').reduce((s,e)=>s+pNum(e.amt),0);
+            let mBud=Object.keys(CM).filter(k=>CM[k][2]).reduce((s,k)=>s+pNum(D.bg[k]||0),0);
+            return{cash,stk,cc,loan,net:cash+stk-cc-loan,liquid:cash-cc,mOut,mIn,mBud};
+        }
+
+        function groupByBank(){
+            let g={};
+            D.acc.forEach((a,i)=>{
+                let k=a.inst||'其他';
+                if(!g[k])g[k]={cash:[],card:[],loan:[]};
+                let o={a,i};
+                if(a.type==='CASH')g[k].cash.push(o);else if(a.type==='CARD')g[k].card.push(o);else g[k].loan.push(o);
+            });
+            return g;
+        }
+
+        function bankTotals(items){
+            let cash=0,cc=0,loan=0,curBr={};
+            items.cash.forEach(({a})=>{cash+=toHKD(a.bal,a.cur);curBr[a.cur]=(curBr[a.cur]||0)+pNum(a.bal)});
+            items.card.forEach(({a})=>{cc+=Math.abs(Math.min(0,toHKD(a.bal,a.cur)))});
+            items.loan.forEach(({a})=>{loan+=Math.abs(Math.min(0,toHKD(a.bal,a.cur)))});
+            return{cash,cc,loan,net:cash-cc-loan,curBr};
+        }
+
+        function renderAll(){
+            let T=calcTotals();
+            document.getElementById('v-net').innerText=fmtHKD(T.net);
+            document.getElementById('v-cash').innerText=fmtHKD(T.cash);
+            document.getElementById('v-stock').innerText=fmtHKD(T.stk);
+            document.getElementById('v-cc').innerText=fmtHKD(T.cc);
+            document.getElementById('v-loan').innerText=fmtHKD(T.loan);
+            document.getElementById('v-liquid').innerText=fmtHKD(T.liquid);
+            document.getElementById('v-month-spend').innerText=fNum(T.mOut)+' / '+fNum(T.mBud);
+            document.getElementById('v-month-in').innerText=fmtHKD(T.mIn);
+            let pct=T.mBud>0?Math.min(100,T.mOut/T.mBud*100):0;
+            document.getElementById('v-month-bar').style.width=pct+'%';
+            document.getElementById('v-month-left').innerText=T.mBud>0?`尚餘預算 HK$ ${fNum(Math.max(0,T.mBud-T.mOut))}`:'尚未設定預算';
+
+            let fxH='';
+            CURS.filter(c=>c!=='HKD').forEach(c=>{
+                fxH+=`<label class="text-slate-500">${c}<input value="${D.fx[c]||1}" onchange="D.fx['${c}']=pNum(this.value);saveDb()" class="w-full bg-slate-950 border border-slate-700 rounded px-1 py-0.5 text-white outline-none"></label>`;
+            });
+            document.getElementById('v-fx').innerHTML=fxH;
+
+            let banks=groupByBank(),bH='';
+            Object.keys(banks).sort().forEach(inst=>{
+                let bt=bankTotals(banks[inst]);
+                let curTxt=Object.entries(bt.curBr).map(([c,v])=>`${c} ${fNum(v)}`).join(' · ');
+                bH+=`<div class="bank-card rounded-lg px-3 py-2.5">
+                    <div class="flex justify-between items-center gap-2">
+                        <div class="min-w-0"><h3 class="font-semibold text-white text-xs truncate">${inst}</h3><p class="text-[9px] text-slate-500 truncate">${curTxt||'—'}</p></div>
+                        <div class="text-right shrink-0"><p class="text-[9px] text-slate-500">淨資產</p><p class="amt ${bt.net>=0?'text-emerald-400':'text-rose-400'}">${fmtHKD(bt.net)}</p></div>
+                    </div>
+                    <div class="grid grid-cols-3 gap-1 text-[9px] font-mono mt-1.5 pt-1.5 border-t border-slate-700/40">
+                        <div><span class="text-slate-500">存款</span> <span class="text-emerald-400/90">${fNum(bt.cash)}</span></div>
+                        <div><span class="text-slate-500">卡債</span> <span class="text-rose-400/90">${fNum(bt.cc)}</span></div>
+                        <div><span class="text-slate-500">貸款</span> <span class="text-amber-400/90">${fNum(bt.loan)}</span></div>
+                    </div>
+                </div>`;
+            });
+            document.getElementById('v-banks').innerHTML=bH||'<p class="text-slate-500 text-xs">尚未新增帳戶</p>';
+
+            renderAccGroups(banks);
+            renderExp();
+            renderBudget(T);
+            renderStk();
+        }
+
+        function accLabel(a){
+            if(a.type==='CARD')return'信用卡';
+            if(a.type==='LOAN')return'貸款';
+            return SUB[a.sub]||'戶口';
+        }
+
+        function accRow(a,i){
+            let balCl=pNum(a.bal)<0?'text-rose-400':'text-emerald-400';
+            let subOpts=a.type==='CASH'?['SAVINGS','CHECKING','FOREIGN']:a.type==='CARD'?['CARD']:['LOAN'];
+            let hkdNote=a.cur!=='HKD'?`<span class="text-[9px] text-slate-500 ml-1">≈${fNum(toHKD(a.bal,a.cur))}</span>`:'';
+            let cardFlds=a.type==='CARD'?`<label class="text-slate-500">額度<input value="${fNum(a.lim)}" onchange="uAcc(${i},'lim',this.value)" class="fld w-14 text-right ml-1">結單日<input value="${a.day||15}" onchange="uAcc(${i},'day',this.value)" class="fld w-8 text-right ml-1"></label>`:'';
+            return`<div class="acc-row">
+                <div class="flex-1 min-w-0 flex items-center gap-2 truncate">
+                    <span class="text-white text-xs truncate">${escAttr(a.name)}</span>
+                    <span class="text-[9px] text-slate-500 shrink-0">${accLabel(a)} · ${a.cur}</span>
+                </div>
+                <div class="shrink-0 flex items-center gap-1">
+                    <input value="${fNum(a.bal)}" onchange="uAcc(${i},'bal',this.value)" class="fld w-[72px] text-right amt ${balCl}" title="餘額">
+                    ${hkdNote}
+                </div>
+                <button type="button" onclick="toggleAccEdit(${i})" class="text-slate-500 hover:text-cyan-400 shrink-0 px-1" title="編輯帳戶設定"><i class="fa-solid fa-pen-to-square text-[10px]"></i></button>
+                <i class="fa-solid fa-trash text-slate-600 hover:text-rose-500 cursor-pointer text-[10px] shrink-0" onclick="dAcc(${i})"></i>
+            </div>
+            <div id="acc-ed-${i}" class="acc-edit">
+                <label class="text-slate-500">名稱<input value="${escAttr(a.name)}" onchange="uAcc(${i},'name',this.value)" class="fld ml-1 w-24"></label>
+                <label class="text-slate-500">銀行<input value="${escAttr(a.inst)}" onchange="uAcc(${i},'inst',this.value)" class="fld ml-1 w-16"></label>
+                <select onchange="uAcc(${i},'type',this.value)" class="fld"><option value="CASH" ${a.type==='CASH'?'selected':''}>存款</option><option value="CARD" ${a.type==='CARD'?'selected':''}>信用卡</option><option value="LOAN" ${a.type==='LOAN'?'selected':''}>貸款</option></select>
+                <select onchange="uAcc(${i},'sub',this.value)" class="fld">${subOpts.map(s=>`<option value="${s}" ${a.sub===s?'selected':''}>${SUB[s]}</option>`).join('')}</select>
+                <select onchange="uAcc(${i},'cur',this.value)" class="fld">${CURS.map(c=>`<option value="${c}" ${a.cur===c?'selected':''}>${c}</option>`).join('')}</select>
+                ${cardFlds}
+            </div>`;
+        }
+
+        function toggleAccEdit(i){let el=document.getElementById('acc-ed-'+i);if(el)el.classList.toggle('open')}
+
+        function renderAccGroups(banks){
+            let h='';
+            Object.keys(banks).sort().forEach(inst=>{
+                let g=banks[inst];
+                let instSafe=escAttr(inst);
+                h+=`<div class="glass rounded-xl overflow-hidden">
+                    <div class="px-3 py-2 bg-slate-800/40 border-b border-slate-700/60 flex justify-between items-center gap-2">
+                        <div class="flex items-center gap-1.5 min-w-0 flex-1">
+                            <i class="fa-solid fa-landmark text-cyan-400/80 text-[10px] shrink-0"></i>
+                            <input value="${instSafe}" data-old="${instSafe}" onblur="uBankFromInput(this)" onkeydown="if(event.key==='Enter')this.blur()"
+                                class="fld font-semibold text-white text-xs flex-1 min-w-0 max-w-[160px]" title="點此修改銀行名稱">
+                        </div>
+                        <button type="button" data-bank="${instSafe}" onclick="addAccToBank(this.dataset.bank)" class="text-[9px] text-cyan-400/90 border border-slate-700 px-1.5 py-0.5 rounded shrink-0">＋戶口</button>
+                    </div>`;
+                if(g.cash.length){h+=`<p class="px-3 pt-2 pb-0 text-[9px] font-semibold text-emerald-500/80 uppercase tracking-wide"><i class="fa-solid fa-piggy-bank mr-1"></i>存款戶口</p><div>${g.cash.map(({a,i})=>accRow(a,i)).join('')}</div>`}
+                if(g.card.length){h+=`<p class="px-3 pt-2 pb-0 text-[9px] font-semibold text-amber-500/80 uppercase tracking-wide"><i class="fa-solid fa-credit-card mr-1"></i>信用卡</p><div>${g.card.map(({a,i})=>accRow(a,i)).join('')}</div>`}
+                if(g.loan.length){h+=`<p class="px-3 pt-2 pb-0 text-[9px] font-semibold text-rose-500/80 uppercase tracking-wide"><i class="fa-solid fa-house-circle-exclamation mr-1"></i>貸款</p><div>${g.loan.map(({a,i})=>accRow(a,i)).join('')}</div>`}
+                h+=`</div>`;
+            });
+            document.getElementById('v-acc-groups').innerHTML=h||'<p class="text-slate-500 text-xs glass p-4 rounded-xl">按「新增帳戶」開始</p>';
+        }
+
+        function getOpts(selVal,types){
+            let arr=D.acc.filter(a=>types.includes(a.type)).map(a=>a.name);
+            if(selVal&&!arr.includes(selVal))arr.unshift(selVal);
+            return arr.map(n=>`<option value="${n}" ${n===selVal?'selected':''}>${n}</option>`).join('');
+        }
+
+        function renderExp(){
+            let h='';
+            D.exp.sort((a,b)=>new Date(b.date)-new Date(a.date)).forEach(e=>{
+                let idx=D.exp.findIndex(x=>x.id===e.id);
+                let tCl=e.t==='IN'?'text-emerald-400':e.t==='OUT'?'text-rose-400':'text-cyan-400';
+                let pHtm=e.t==='TRANSFER'?
+                    `<div class="flex gap-1 items-center"><select onchange="uExp(${idx},'pm',this.value)" class="${sel} flex-1">${getOpts(e.pm,['CASH','CARD','LOAN'])}</select><i class="fa-solid fa-arrow-right text-cyan-500 text-[8px]"></i><select onchange="uExp(${idx},'to',this.value)" class="${sel} flex-1 text-emerald-400">${getOpts(e.to,['CASH','CARD','LOAN'])}</select></div>`:
+                    `<div class="flex gap-1"><select onchange="uExpPg(${idx},this.value)" class="${sel} w-16"><option value="CASH" ${e.pg==='CASH'?'selected':''}>存款</option><option value="CARD" ${e.pg==='CARD'?'selected':''}>信用卡</option></select><select onchange="uExp(${idx},'pm',this.value)" class="${sel} flex-1">${getOpts(e.pm,e.pg==='CARD'?['CARD']:['CASH'])}</select></div>`;
+                h+=`<tr class="hover:bg-slate-800/40">
+                    <td class="p-2"><input type="date" value="${e.date}" onchange="uExp(${idx},'date',this.value)" class="${inp} text-[10px]"></td>
+                    <td class="p-2"><select onchange="uExp(${idx},'t',this.value)" class="${sel} ${tCl} font-bold min-w-[72px]"><option value="OUT" ${e.t==='OUT'?'selected':''}>支出</option><option value="IN" ${e.t==='IN'?'selected':''}>收入</option><option value="TRANSFER" ${e.t==='TRANSFER'?'selected':''}>轉帳</option></select></td>
+                    <td class="p-2"><select onchange="uExp(${idx},'cat',this.value)" class="${sel}" ${e.t==='TRANSFER'?'disabled':''}>${Object.keys(CM).map(k=>`<option value="${k}" ${e.cat===k?'selected':''}>${CM[k][0]}</option>`).join('')}</select></td>
+                    <td class="p-2 min-w-[180px]">${pHtm}</td>
+                    <td class="p-2"><input value="${e.ds||''}" onchange="uExp(${idx},'ds',this.value)" class="${inp} min-w-[60px]" placeholder="備註"></td>
+                    <td class="p-2 text-right"><input value="${fNum(e.amt)}" onchange="uExp(${idx},'amt',this.value)" class="bg-slate-900 rounded px-2 py-1 text-right w-20 font-bold outline-none text-white"></td>
+                    <td class="p-2 text-center"><i class="fa-solid fa-trash text-slate-600 hover:text-rose-500 cursor-pointer" onclick="dExp(${idx})"></i></td>
+                </tr>`;
+            });
+            document.getElementById('tb-exp').innerHTML=h;
+        }
+
+        function renderBudget(T){
+            let mStr=new Date().toISOString().slice(0,7),mExp=D.exp.filter(e=>e.date.startsWith(mStr)&&e.t==='OUT'),hB='';
+            Object.keys(CM).forEach(k=>{
+                if(!CM[k][2])return;
+                let cB=pNum(D.bg[k]||0),cS=mExp.filter(e=>e.cat===k).reduce((s,e)=>s+pNum(e.amt),0);
+                let pct=cB>0?Math.min(100,cS/cB*100):0;
+                hB+=`<div class="bg-slate-900/60 p-2 rounded-lg border border-slate-800 mb-1">
+                    <div class="flex justify-between text-xs mb-1"><span class="${CM[k][1]} font-bold">${CM[k][0]}</span><span class="font-mono text-slate-400">${fNum(cS)} / ${fNum(cB)}</span></div>
+                    <div class="h-1.5 bg-slate-800 rounded-full overflow-hidden"><div class="metric-bar h-full ${pct>90?'bg-rose-500':pct>70?'bg-amber-500':'bg-emerald-500'}" style="width:${pct}%"></div></div>
+                    <div class="mt-1 text-right"><input value="${fNum(cB)}" onchange="D.bg['${k}']=pNum(this.value);saveDb()" class="w-16 bg-slate-950 text-right outline-none text-white rounded px-1 border border-slate-700 text-[10px]" title="預算"></div>
+                </div>`;
+            });
+            document.getElementById('v-budget').innerHTML=`<div class="text-xs mb-2 text-slate-300">本月總支出 <span class="font-bold text-rose-300">${fNum(T.mOut)}</span> / 預算 <span class="font-bold text-white">${fNum(T.mBud)}</span></div>${hB}`;
+        }
+
+        function renderStk(){
+            let h='';
+            D.stk.forEach((s,i)=>{
+                h+=`<tr><td class="p-2"><input value="${s.code}" onchange="D.stk[${i}].code=this.value;saveDb()" class="${inp} w-16"></td><td class="p-2"><input value="${fNum(s.sh)}" onchange="D.stk[${i}].sh=pNum(this.value);saveDb()" class="w-12 bg-slate-900 rounded p-1 text-center outline-none"></td><td class="p-2"><input value="${fNum(s.cost)}" onchange="D.stk[${i}].cost=pNum(this.value);saveDb()" class="w-12 bg-slate-900 rounded p-1 text-center outline-none"></td><td class="p-2 text-right"><input value="${fNum(s.cur)}" onchange="D.stk[${i}].cur=pNum(this.value);saveDb()" class="w-16 bg-slate-900 rounded p-1 text-right text-emerald-400 font-bold outline-none"></td><td class="p-2 text-center"><i class="fa-solid fa-trash text-slate-600 hover:text-rose-500 cursor-pointer" onclick="D.stk.splice(${i},1);saveDb()"></i></td></tr>`;
+            });
+            document.getElementById('tb-stk').innerHTML=h;
+        }
+
+        function uAcc(i,f,v){
+            if(f==='day')D.acc[i][f]=parseInt(v)||15;
+            else if(f==='name'){let o=D.acc[i].name;D.acc[i].name=v;D.exp.forEach(e=>{if(e.pm===o)e.pm=v;if(e.to===o)e.to=v})}
+            else if(f==='sub'){D.acc[i].sub=v;if(v==='FOREIGN'&&D.acc[i].cur==='HKD')D.acc[i].cur='USD'}
+            else if(f==='type'){D.acc[i].type=v;D.acc[i].sub=v==='CARD'?'CARD':v==='LOAN'?'LOAN':'SAVINGS'}
+            else D.acc[i][f]=(f==='bal'||f==='lim')?pNum(v):v;
+            saveDb();
+        }
+        function uBank(oldName,newName){
+            newName=(newName||'').trim();
+            if(!newName||newName===oldName)return;
+            D.acc.forEach(a=>{if(a.inst===oldName)a.inst=newName});
+            saveDb();
+        }
+        function uBankFromInput(el){
+            let old=el.dataset.old||'', neu=(el.value||'').trim();
+            if(!neu){el.value=old;return}
+            if(neu!==old)uBank(old,neu);
+            el.dataset.old=neu;
+        }
+        function addAcc(){
+            let inst=prompt('請輸入銀行名稱（例如 HSBC、渣打、工銀）');
+            if(!inst)return;
+            inst=inst.trim();if(!inst)return;
+            let name=prompt('請輸入戶口名稱',inst+' 儲蓄');
+            if(name===null)return;
+            name=(name||'新戶口').trim()||'新戶口';
+            D.acc.push({id:Date.now(),inst,name,type:'CASH',sub:'SAVINGS',cur:'HKD',bal:0,lim:0,day:null});
+            saveDb();
+        }
+        function addAccToBank(inst){
+            let name=prompt('請輸入戶口名稱',inst+' 儲蓄');
+            if(name===null)return;
+            name=(name||'新戶口').trim()||'新戶口';
+            D.acc.push({id:Date.now(),inst,name,type:'CASH',sub:'SAVINGS',cur:'HKD',bal:0,lim:0,day:null});
+            saveDb();
+        }
+        function dAcc(i){if(confirm('刪除此帳戶？')){D.acc.splice(i,1);saveDb()}}
+
+        function uExp(i,f,v){
+            let o=D.exp[i];applyBal(o.t,o.amt,o.pm,o.to,true);
+            if(f==='amt')D.exp[i][f]=pNum(v);
+            else if(f==='t'){
+                D.exp[i].t=v;
+                if(v==='TRANSFER'){D.exp[i].pg='TRANSFER';D.exp[i].cat='OTHER';D.exp[i].pm=D.acc.find(a=>a.type==='CASH')?.name||'';D.exp[i].to=D.acc.find(a=>a.type==='CARD')?.name||''}
+                else{D.exp[i].pg='CASH';D.exp[i].cat='FOOD';D.exp[i].pm=D.acc.find(a=>a.type==='CASH')?.name||'';D.exp[i].to=''}
+            }else D.exp[i][f]=v;
+            applyBal(D.exp[i].t,D.exp[i].amt,D.exp[i].pm,D.exp[i].to,false);saveDb();
+        }
+        function uExpPg(i,g){
+            let o=D.exp[i];applyBal(o.t,o.amt,o.pm,o.to,true);
+            D.exp[i].pg=g;D.exp[i].pm=D.acc.find(a=>g==='CARD'?a.type==='CARD':a.type==='CASH')?.name||'';
+            applyBal(D.exp[i].t,D.exp[i].amt,D.exp[i].pm,D.exp[i].to,false);saveDb();
+        }
+        function addExp(){D.exp.unshift({id:Date.now(),date:new Date().toISOString().split('T')[0],t:'OUT',cat:'FOOD',pg:'CARD',pm:D.acc.find(a=>a.type==='CARD')?.name||D.acc.find(a=>a.type==='CASH')?.name||'',to:'',ds:'',amt:0});saveDb()}
+        function dExp(i){if(confirm('刪除並還原餘額？')){let o=D.exp[i];applyBal(o.t,o.amt,o.pm,o.to,true);D.exp.splice(i,1);saveDb()}}
+        function addStk(){D.stk.push({id:Date.now(),inst:'FUTU',code:'0000',sh:0,cost:0,cur:0});saveDb()}
     </script>
 </body>
 </html>
