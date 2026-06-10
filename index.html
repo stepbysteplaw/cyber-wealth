@@ -80,14 +80,17 @@
         <!-- 總覽 -->
         <section class="grid grid-cols-1 lg:grid-cols-3 gap-3">
             <div class="lg:col-span-2 glass p-4 md:p-5 rounded-xl">
-                <span class="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">總淨資產（折合 HKD）</span>
-                <div class="amt-lg text-emerald-400 font-mono my-1" id="v-net">HK$ 0</div>
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-2 mt-3 pt-3 border-t border-slate-700/60">
+                <span class="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">總流動淨資產（不含按揭，折合 HKD）</span>
+                <div class="amt-lg text-emerald-400 font-mono my-1" id="v-liquid-net">HK$ 0</div>
+                <p class="text-[9px] text-slate-500 mb-3">現金存款 ＋ 股票 － 信用卡待還</p>
+                <div id="v-cur-breakdown" class="flex flex-wrap gap-2 mb-3"></div>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-2 pt-3 border-t border-slate-700/60">
                     <div class="bg-slate-900/40 rounded-lg px-2.5 py-2"><span class="block text-[9px] text-slate-500 mb-0.5">現金存款</span><span id="v-cash" class="amt text-white">0</span></div>
-                    <div class="bg-slate-900/40 rounded-lg px-2.5 py-2"><span class="block text-[9px] text-slate-500 mb-0.5">股票現值</span><span id="v-stock" class="amt text-cyan-400">0</span></div>
+                    <div class="bg-slate-900/40 rounded-lg px-2.5 py-2"><span class="block text-[9px] text-slate-500 mb-0.5">股票總額</span><span id="v-stock" class="amt text-cyan-400">0</span></div>
                     <div class="bg-slate-900/40 rounded-lg px-2.5 py-2"><span class="block text-[9px] text-slate-500 mb-0.5">信用卡待還</span><span id="v-cc" class="amt text-rose-400">0</span></div>
-                    <div class="bg-slate-900/40 rounded-lg px-2.5 py-2"><span class="block text-[9px] text-slate-500 mb-0.5">貸款未還</span><span id="v-loan" class="amt text-amber-400">0</span></div>
+                    <div class="bg-slate-900/40 rounded-lg px-2.5 py-2"><span class="block text-[9px] text-slate-500 mb-0.5">按揭／貸款</span><span id="v-loan" class="amt text-amber-400">0</span></div>
                 </div>
+                <p class="text-[9px] text-slate-600 mt-2">含按揭淨資產：<span id="v-net-full" class="font-mono text-slate-400">HK$ 0</span></p>
             </div>
             <div class="glass p-4 rounded-xl space-y-3 text-xs">
                 <div>
@@ -333,11 +336,14 @@
         }
 
         function calcTotals(){
-            let cash=0,cc=0,loan=0,stk=0,ccLim=0;
+            let cash=0,cc=0,loan=0,stk=0,ccLim=0,curTotals={};
             D.stk.forEach(s=>stk+=pNum(s.sh)*pNum(s.cur));
             D.acc.forEach(a=>{
                 let h=toHKD(a.bal,a.cur);
-                if(a.type==='CASH')cash+=h;
+                if(a.type==='CASH'){
+                    cash+=h;
+                    curTotals[a.cur]=(curTotals[a.cur]||0)+pNum(a.bal);
+                }
                 else if(a.type==='CARD'){cc+=Math.abs(Math.min(0,h));ccLim+=toHKD(a.lim,a.cur)}
                 else loan+=Math.abs(Math.min(0,h));
             });
@@ -345,7 +351,8 @@
             let mOut=D.exp.filter(e=>e.date.startsWith(mStr)&&e.t==='OUT').reduce((s,e)=>s+pNum(e.amt),0);
             let mIn=D.exp.filter(e=>e.date.startsWith(mStr)&&e.t==='IN').reduce((s,e)=>s+pNum(e.amt),0);
             let mBud=Object.keys(CM).filter(k=>CM[k][2]).reduce((s,k)=>s+pNum(D.bg[k]||0),0);
-            return{cash,stk,cc,loan,net:cash+stk-cc-loan,liquid:cash-cc,mOut,mIn,mBud};
+            let liquidNet=cash+stk-cc;
+            return{cash,stk,cc,loan,liquidNet,netFull:liquidNet-loan,liquid:cash-cc,curTotals,mOut,mIn,mBud};
         }
 
         function groupByBank(){
@@ -364,17 +371,29 @@
             items.cash.forEach(({a})=>{cash+=toHKD(a.bal,a.cur);curBr[a.cur]=(curBr[a.cur]||0)+pNum(a.bal)});
             items.card.forEach(({a})=>{cc+=Math.abs(Math.min(0,toHKD(a.bal,a.cur)))});
             items.loan.forEach(({a})=>{loan+=Math.abs(Math.min(0,toHKD(a.bal,a.cur)))});
-            return{cash,cc,loan,net:cash-cc-loan,curBr};
+            return{cash,cc,loan,net:cash-cc,curBr};
         }
 
         function renderAll(){
             let T=calcTotals();
-            document.getElementById('v-net').innerText=fmtHKD(T.net);
+            let lnEl=document.getElementById('v-liquid-net');
+            lnEl.innerText=fmtHKD(T.liquidNet);
+            lnEl.className='amt-lg font-mono my-1 '+(T.liquidNet>=0?'text-emerald-400':'text-rose-400');
+            document.getElementById('v-net-full').innerText=fmtHKD(T.netFull);
             document.getElementById('v-cash').innerText=fmtHKD(T.cash);
             document.getElementById('v-stock').innerText=fmtHKD(T.stk);
             document.getElementById('v-cc').innerText=fmtHKD(T.cc);
             document.getElementById('v-loan').innerText=fmtHKD(T.loan);
             document.getElementById('v-liquid').innerText=fmtHKD(T.liquid);
+
+            let curH='';
+            CURS.forEach(c=>{
+                if(!T.curTotals[c])return;
+                let v=T.curTotals[c];
+                let hkd=c!=='HKD'?` <span class="text-slate-600">≈${fNum(toHKD(v,c))}</span>`:'';
+                curH+=`<span class="inline-flex items-center gap-1 bg-slate-900/50 border border-slate-800 rounded px-2 py-1 text-[10px] font-mono"><span class="text-amber-400/90 font-bold">${c}</span><span class="text-white">${fNum(v)}</span>${hkd}</span>`;
+            });
+            document.getElementById('v-cur-breakdown').innerHTML=curH||'<span class="text-[9px] text-slate-600">尚無存款戶口</span>';
             document.getElementById('v-month-spend').innerText=fNum(T.mOut)+' / '+fNum(T.mBud);
             document.getElementById('v-month-in').innerText=fmtHKD(T.mIn);
             let pct=T.mBud>0?Math.min(100,T.mOut/T.mBud*100):0;
@@ -394,7 +413,7 @@
                 bH+=`<div class="bank-card rounded-lg px-3 py-2.5">
                     <div class="flex justify-between items-center gap-2">
                         <div class="min-w-0"><h3 class="font-semibold text-white text-xs truncate">${inst}</h3><p class="text-[9px] text-slate-500 truncate">${curTxt||'—'}</p></div>
-                        <div class="text-right shrink-0"><p class="text-[9px] text-slate-500">淨資產</p><p class="amt ${bt.net>=0?'text-emerald-400':'text-rose-400'}">${fmtHKD(bt.net)}</p></div>
+                        <div class="text-right shrink-0"><p class="text-[9px] text-slate-500">流動淨值</p><p class="amt ${bt.net>=0?'text-emerald-400':'text-rose-400'}">${fmtHKD(bt.net)}</p></div>
                     </div>
                     <div class="grid grid-cols-3 gap-1 text-[9px] font-mono mt-1.5 pt-1.5 border-t border-slate-700/40">
                         <div><span class="text-slate-500">存款</span> <span class="text-emerald-400/90">${fNum(bt.cash)}</span></div>
