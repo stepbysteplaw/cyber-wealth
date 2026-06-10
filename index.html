@@ -31,6 +31,9 @@
         .metric-bar{transition:width .4s ease}
         .chart-wrap{position:relative;height:220px}
         .exp-date-hdr td{border-top:1px solid rgba(51,65,85,.5)}
+        .zone-label{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#64748b;padding-bottom:6px;border-bottom:1px solid rgba(51,65,85,.45);margin-bottom:12px;display:flex;align-items:center;gap:6px}
+        .zone-label i{font-size:9px}
+        .zone-block{display:flex;flex-direction:column;gap:12px}
     </style>
 </head>
 <body onload="initApp()" class="p-3 md:p-6">
@@ -80,7 +83,7 @@
             </div>
         </header>
 
-        <!-- 總覽 -->
+        <!-- 資產總覽 -->
         <section class="grid grid-cols-1 lg:grid-cols-3 gap-3">
             <div class="lg:col-span-2 glass p-4 md:p-5 rounded-xl">
                 <span class="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">總流動淨資產</span>
@@ -97,105 +100,117 @@
             </div>
             <div class="glass p-4 rounded-xl space-y-3 text-xs">
                 <div>
-                    <div class="flex justify-between mb-1 text-xs"><span class="text-slate-400">本月支出 / 預算</span><span id="v-month-spend" class="font-mono text-rose-300">0 / 0</span></div>
+                    <div class="flex justify-between mb-1 text-xs"><span class="text-slate-400">本月支出</span><span id="v-month-spend" class="font-mono text-rose-300">0 / 0</span></div>
                     <div class="h-2.5 bg-slate-800 rounded-full overflow-hidden"><div id="v-month-bar" class="metric-bar h-full bg-rose-500 rounded-full" style="width:0%"></div></div>
                     <p id="v-month-left" class="text-[10px] text-slate-500 mt-1">尚餘預算 —</p>
                 </div>
-                <div>
-                    <div class="flex justify-between mb-1 text-xs"><span class="text-slate-400">本月收入</span><span id="v-month-in" class="font-mono text-emerald-400">0</span></div>
-                </div>
-                <div>
-                    <div class="flex justify-between mb-1 text-xs"><span class="text-slate-400">流動資金（現金－卡債）</span><span id="v-liquid" class="font-mono text-cyan-300">0</span></div>
-                </div>
-                <div class="pt-2 border-t border-slate-800">
-                    <p class="text-[10px] text-slate-500 mb-2"><i class="fa-solid fa-coins text-amber-400 mr-1"></i>匯率設定（→ HKD）</p>
-                    <div id="v-fx" class="grid grid-cols-3 gap-1 text-[10px] font-mono"></div>
+                <div class="grid grid-cols-2 gap-2 pt-1">
+                    <div class="bg-slate-900/40 rounded-lg px-2.5 py-2"><span class="block text-[9px] text-slate-500 mb-0.5">本月收入</span><span id="v-month-in" class="font-mono text-emerald-400">0</span></div>
+                    <div class="bg-slate-900/40 rounded-lg px-2.5 py-2"><span class="block text-[9px] text-slate-500 mb-0.5">流動資金</span><span id="v-liquid" class="font-mono text-cyan-300">0</span></div>
                 </div>
             </div>
         </section>
 
-        <!-- 記帳本 -->
-        <section class="glass p-4 rounded-2xl">
-            <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-3">
-                <h2 class="font-bold text-white text-sm"><i class="fa-solid fa-receipt text-orange-400 mr-2"></i>自動連動記帳本</h2>
-                <button onclick="addExp()" class="px-3 py-1 bg-orange-500 text-black font-bold text-xs rounded-lg shrink-0">＋ 記一筆</button>
-            </div>
-            <p class="text-[10px] text-slate-500 mb-2">信用卡消費 → 卡債增加｜儲蓄還卡 → 選「轉帳」連動兩個戶口</p>
-            <div class="flex flex-wrap items-center gap-2 mb-2 text-[10px]">
-                <label class="flex items-center gap-1 text-slate-400 bg-slate-900/60 border border-slate-700 rounded-lg px-2 py-1">
-                    <i class="fa-regular fa-calendar text-cyan-400"></i>
-                    <input type="date" id="exp-date-filter" onchange="setExpDate(this.value)" class="bg-transparent text-white outline-none">
-                </label>
-                <button type="button" onclick="setExpToday()" class="px-2 py-1 rounded-lg border border-slate-700 text-cyan-400 hover:bg-slate-800">今天</button>
-                <button type="button" id="exp-all-btn" onclick="toggleExpAll()" class="px-2 py-1 rounded-lg border border-slate-700 text-slate-300 hover:bg-slate-800">查看全部紀錄</button>
-                <span id="exp-count-hint" class="text-slate-500"></span>
-            </div>
-            <div class="scroll-box max-h-[420px]">
-                <table class="w-full text-left text-xs whitespace-nowrap">
-                    <thead class="bg-slate-800 sticky top-0 z-10"><tr class="text-slate-400 *:py-2 *:px-2"><th>日期</th><th>類型</th><th>分類</th><th>帳戶/轉帳</th><th>備註</th><th class="text-right">金額</th><th></th></tr></thead>
-                    <tbody id="tb-exp" class="divide-y divide-slate-700/50"></tbody>
-                </table>
-            </div>
-        </section>
+        <!-- 記帳專區 -->
+        <div class="zone-block">
+            <p class="zone-label"><i class="fa-solid fa-receipt text-orange-400"></i>記帳</p>
 
-        <!-- 花費分析 -->
-        <section class="glass p-4 rounded-2xl">
-            <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-3">
-                <h2 class="font-bold text-white text-sm"><i class="fa-solid fa-chart-pie text-purple-400 mr-2"></i>花費分析</h2>
-                <label class="flex items-center gap-1.5 text-[10px] text-slate-400 bg-slate-900/60 border border-slate-700 rounded-lg px-2 py-1">
-                    分析月份
-                    <input type="month" id="chart-month" onchange="renderCharts()" class="bg-transparent text-white outline-none">
-                </label>
-            </div>
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                <div class="bg-slate-900/40 rounded-xl p-3 border border-slate-800">
-                    <p class="text-[10px] text-slate-400 mb-2"><i class="fa-solid fa-chart-pie mr-1 text-purple-400"></i>當月支出分類</p>
-                    <div class="chart-wrap"><canvas id="chart-cat"></canvas></div>
-                    <p id="chart-cat-sum" class="text-[10px] text-slate-500 text-center mt-1"></p>
-                </div>
-                <div class="bg-slate-900/40 rounded-xl p-3 border border-slate-800">
-                    <p class="text-[10px] text-slate-400 mb-2"><i class="fa-solid fa-chart-column mr-1 text-rose-400"></i>近 12 個月支出</p>
-                    <div class="chart-wrap"><canvas id="chart-monthly"></canvas></div>
-                    <p id="chart-month-avg" class="text-[10px] text-slate-500 text-center mt-1"></p>
-                </div>
-            </div>
-        </section>
+            <div class="grid grid-cols-1 xl:grid-cols-3 gap-3">
+                <!-- 記帳本 -->
+                <section class="xl:col-span-2 glass p-4 rounded-2xl flex flex-col min-h-0">
+                    <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-3">
+                        <h2 class="font-bold text-white text-sm"><i class="fa-solid fa-pen-to-square text-orange-400 mr-2"></i>自動連動記帳本</h2>
+                        <button onclick="addExp()" class="px-3 py-1 bg-orange-500 text-black font-bold text-xs rounded-lg shrink-0">＋ 記一筆</button>
+                    </div>
+                    <p class="text-[10px] text-slate-500 mb-2">信用卡消費 → 卡債增加｜儲蓄還卡 → 選「轉帳」連動兩個戶口</p>
+                    <div class="flex flex-wrap items-center gap-2 mb-2 text-[10px]">
+                        <label class="flex items-center gap-1 text-slate-400 bg-slate-900/60 border border-slate-700 rounded-lg px-2 py-1">
+                            <i class="fa-regular fa-calendar text-cyan-400"></i>
+                            <input type="date" id="exp-date-filter" onchange="setExpDate(this.value)" class="bg-transparent text-white outline-none">
+                        </label>
+                        <button type="button" onclick="setExpToday()" class="px-2 py-1 rounded-lg border border-slate-700 text-cyan-400 hover:bg-slate-800">今天</button>
+                        <button type="button" id="exp-all-btn" onclick="toggleExpAll()" class="px-2 py-1 rounded-lg border border-slate-700 text-slate-300 hover:bg-slate-800">查看全部紀錄</button>
+                        <span id="exp-count-hint" class="text-slate-500"></span>
+                    </div>
+                    <div class="scroll-box max-h-[380px] xl:max-h-[420px] flex-1">
+                        <table class="w-full text-left text-xs whitespace-nowrap">
+                            <thead class="bg-slate-800 sticky top-0 z-10"><tr class="text-slate-400 *:py-2 *:px-2"><th>日期</th><th>類型</th><th>分類</th><th>帳戶/轉帳</th><th>備註</th><th class="text-right">金額</th><th></th></tr></thead>
+                            <tbody id="tb-exp" class="divide-y divide-slate-700/50"></tbody>
+                        </table>
+                    </div>
+                </section>
 
-        <!-- 各銀行總覽 -->
-        <section>
-            <h2 class="section-h mb-2"><i class="fa-solid fa-building-columns text-cyan-400 mr-1.5 text-xs"></i>各銀行資產總覽</h2>
-            <div id="v-banks" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2"></div>
-        </section>
+                <!-- 分類預算 -->
+                <section class="glass p-4 rounded-2xl flex flex-col min-h-0">
+                    <h2 class="font-bold text-white mb-2 text-sm shrink-0"><i class="fa-solid fa-bullseye text-purple-400 mr-2"></i>分類預算</h2>
+                    <p class="text-[9px] text-slate-500 mb-2 shrink-0">本月各類支出上限（不含轉帳）</p>
+                    <div id="v-budget" class="space-y-2 overflow-y-auto max-h-[380px] xl:max-h-[460px] pr-1"></div>
+                </section>
+            </div>
 
-        <!-- 資產帳戶（分組） -->
-        <section class="space-y-3">
-            <div class="flex justify-between items-center">
-                <h2 class="section-h"><i class="fa-solid fa-wallet text-emerald-400 mr-1.5 text-xs"></i>資產帳戶</h2>
-                <button onclick="addAcc()" class="text-[10px] text-cyan-400 border border-cyan-800 px-2 py-1 rounded hover:bg-cyan-950">＋ 新增</button>
-            </div>
-            <div id="v-acc-groups" class="space-y-4"></div>
-        </section>
+            <!-- 花費分析 -->
+            <section class="glass p-4 rounded-2xl">
+                <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-3">
+                    <h2 class="font-bold text-white text-sm"><i class="fa-solid fa-chart-pie text-purple-400 mr-2"></i>花費分析</h2>
+                    <label class="flex items-center gap-1.5 text-[10px] text-slate-400 bg-slate-900/60 border border-slate-700 rounded-lg px-2 py-1">
+                        分析月份
+                        <input type="month" id="chart-month" onchange="renderCharts()" class="bg-transparent text-white outline-none">
+                    </label>
+                </div>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    <div class="bg-slate-900/40 rounded-xl p-3 border border-slate-800">
+                        <p class="text-[10px] text-slate-400 mb-2"><i class="fa-solid fa-chart-pie mr-1 text-purple-400"></i>當月支出分類</p>
+                        <div class="chart-wrap"><canvas id="chart-cat"></canvas></div>
+                        <p id="chart-cat-sum" class="text-[10px] text-slate-500 text-center mt-1"></p>
+                    </div>
+                    <div class="bg-slate-900/40 rounded-xl p-3 border border-slate-800">
+                        <p class="text-[10px] text-slate-400 mb-2"><i class="fa-solid fa-chart-column mr-1 text-rose-400"></i>近 12 個月支出</p>
+                        <div class="chart-wrap"><canvas id="chart-monthly"></canvas></div>
+                        <p id="chart-month-avg" class="text-[10px] text-slate-500 text-center mt-1"></p>
+                    </div>
+                </div>
+            </section>
+        </div>
 
-        <section class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <div class="glass p-4 rounded-2xl">
-                <h2 class="font-bold text-white mb-2 text-sm"><i class="fa-solid fa-bullseye text-purple-400 mr-2"></i>分類預算（排除轉帳）</h2>
-                <div id="v-budget" class="space-y-2"></div>
-            </div>
-            <div class="glass p-4 rounded-2xl">
-                <div class="flex justify-between items-center mb-3">
-                    <h2 class="font-bold text-white text-sm"><i class="fa-solid fa-arrow-trend-up text-emerald-400 mr-2"></i>持股</h2>
-                    <button onclick="addStk()" class="text-xs text-emerald-400 border border-emerald-700 px-2 py-1 rounded">新增</button>
+        <!-- 資產管理 -->
+        <div class="zone-block">
+            <p class="zone-label"><i class="fa-solid fa-wallet text-emerald-400"></i>資產管理</p>
+
+            <section>
+                <h2 class="section-h mb-2"><i class="fa-solid fa-building-columns text-cyan-400 mr-1.5 text-xs"></i>各銀行資產總覽</h2>
+                <div id="v-banks" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2"></div>
+            </section>
+
+            <section class="space-y-3">
+                <div class="flex justify-between items-center">
+                    <h2 class="section-h"><i class="fa-solid fa-landmark text-cyan-400 mr-1.5 text-xs"></i>資產帳戶</h2>
+                    <button onclick="addAcc()" class="text-[10px] text-cyan-400 border border-cyan-800 px-2 py-1 rounded hover:bg-cyan-950">＋ 新增</button>
                 </div>
-                <div class="scroll-box">
-                    <table class="w-full text-xs whitespace-nowrap">
-                        <thead class="bg-slate-800 sticky top-0"><tr class="text-slate-400 *:py-2 *:px-2">
-                            <th>代號</th><th class="text-center">股數</th><th class="text-center">成本價</th><th class="text-right">現價</th><th></th>
-                        </tr></thead>
-                        <tbody id="tb-stk" class="divide-y divide-slate-700/50"></tbody>
-                    </table>
-                </div>
+                <div id="v-acc-groups" class="space-y-4"></div>
+            </section>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-3">
+                <section class="glass p-4 rounded-2xl">
+                    <div class="flex justify-between items-center mb-3">
+                        <h2 class="font-bold text-white text-sm"><i class="fa-solid fa-arrow-trend-up text-emerald-400 mr-2"></i>持股</h2>
+                        <button onclick="addStk()" class="text-xs text-emerald-400 border border-emerald-700 px-2 py-1 rounded">新增</button>
+                    </div>
+                    <div class="scroll-box">
+                        <table class="w-full text-xs whitespace-nowrap">
+                            <thead class="bg-slate-800 sticky top-0"><tr class="text-slate-400 *:py-2 *:px-2">
+                                <th>代號</th><th class="text-center">股數</th><th class="text-center">成本價</th><th class="text-right">現價</th><th></th>
+                            </tr></thead>
+                            <tbody id="tb-stk" class="divide-y divide-slate-700/50"></tbody>
+                        </table>
+                    </div>
+                </section>
+                <section class="glass p-4 rounded-2xl">
+                    <h2 class="font-bold text-white mb-2 text-sm"><i class="fa-solid fa-coins text-amber-400 mr-2"></i>匯率設定</h2>
+                    <p class="text-[9px] text-slate-500 mb-3">各幣別兌換港幣參考匯率</p>
+                    <div id="v-fx" class="grid grid-cols-2 sm:grid-cols-3 gap-2 text-[10px] font-mono"></div>
+                </section>
             </div>
-        </section>
+        </div>
     </div>
 
     <script>
