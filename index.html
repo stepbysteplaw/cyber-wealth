@@ -190,6 +190,7 @@
 
         function defaultData(){return{
             acc:[
+                {id:0,inst:'WALLET',name:'隨身現金',type:'CASH',sub:'SAVINGS',cur:'HKD',bal:2000,lim:0,day:null},
                 {id:1,inst:'HSBC',name:'HSBC 儲蓄',type:'CASH',sub:'SAVINGS',cur:'HKD',bal:80000,lim:0,day:null},
                 {id:2,inst:'HSBC',name:'HSBC 美元',type:'CASH',sub:'FOREIGN',cur:'USD',bal:5000,lim:0,day:null},
                 {id:3,inst:'HSBC',name:'HSBC 信用卡',type:'CARD',sub:'CARD',cur:'HKD',bal:-12000,lim:80000,day:15},
@@ -211,6 +212,7 @@
                 if(!a.cur)a.cur='HKD';
                 if(!a.sub)a.sub=a.type==='CARD'?'CARD':a.type==='LOAN'?'LOAN':(a.cur!=='HKD'?'FOREIGN':'SAVINGS');
                 if(a.lim===undefined)a.lim=0;
+                if(a.type==='CASH'&&(a.inst==='WALLET'||a.inst==='現金'||/現金|wallet/i.test(a.name||'')))a.inst='WALLET';
             });
             return d;
         }
@@ -365,7 +367,7 @@
         function groupByBank(){
             let g={};
             D.acc.forEach((a,i)=>{
-                let k=a.inst||'其他';
+                let k=(a.type==='CASH'&&(a.inst==='WALLET'||a.inst==='現金'||/現金|wallet/i.test(a.name||'')))?'WALLET':(a.inst||'其他');
                 if(!g[k])g[k]={cash:[],card:[],loan:[]};
                 let o={a,i};
                 if(a.type==='CASH')g[k].cash.push(o);else if(a.type==='CARD')g[k].card.push(o);else g[k].loan.push(o);
@@ -414,16 +416,23 @@
             document.getElementById('v-fx').innerHTML=fxH;
 
             let banks=groupByBank(),bH='';
-            Object.keys(banks).sort().forEach(inst=>{
+            Object.keys(banks).sort((a,b)=>{
+                let aw=(a==='WALLET'||a==='現金')?0:1, bw=(b==='WALLET'||b==='現金')?0:1;
+                return aw-bw||a.localeCompare(b);
+            }).forEach(inst=>{
                 let bt=bankTotals(banks[inst]);
+                let isCash=inst==='WALLET'||inst==='現金';
+                let title=isCash?'現金':inst;
+                let cashLbl=isCash?'現金':'存款';
+                let icon=isCash?'fa-money-bill-wave text-emerald-400':'fa-building-columns text-cyan-400/80';
                 let curTxt=Object.entries(bt.curBr).map(([c,v])=>`${c} ${fNum(v)}`).join(' · ');
                 bH+=`<div class="bank-card rounded-lg px-3 py-2.5">
                     <div class="flex justify-between items-center gap-2">
-                        <div class="min-w-0"><h3 class="font-semibold text-white text-xs truncate">${inst}</h3><p class="text-[9px] text-slate-500 truncate">${curTxt||'—'}</p></div>
+                        <div class="min-w-0"><h3 class="font-semibold text-white text-xs truncate"><i class="fa-solid ${icon} mr-1 text-[10px]"></i>${title}</h3><p class="text-[9px] text-slate-500 truncate">${curTxt||'—'}</p></div>
                         <div class="text-right shrink-0"><p class="text-[9px] text-slate-500">流動淨值</p><p class="amt ${bt.net>=0?'text-emerald-400':'text-rose-400'}">${fmtHKD(bt.net)}</p></div>
                     </div>
                     <div class="grid grid-cols-3 gap-1 text-[9px] font-mono mt-1.5 pt-1.5 border-t border-slate-700/40">
-                        <div><span class="text-slate-500">存款</span> <span class="text-emerald-400/90">${fNum(bt.cash)}</span></div>
+                        <div><span class="text-slate-500">${cashLbl}</span> <span class="text-emerald-400/90">${fNum(bt.cash)}</span></div>
                         <div><span class="text-slate-500">卡債</span> <span class="text-rose-400/90">${fNum(bt.cc)}</span></div>
                         <div><span class="text-slate-500">貸款</span> <span class="text-amber-400/90">${fNum(bt.loan)}</span></div>
                     </div>
@@ -474,19 +483,23 @@
 
         function renderAccGroups(banks){
             let h='';
-            Object.keys(banks).sort().forEach(inst=>{
+            Object.keys(banks).sort((a,b)=>{
+                let aw=(a==='WALLET'||a==='現金')?0:1,bw=(b==='WALLET'||b==='現金')?0:1;
+                return aw-bw||a.localeCompare(b);
+            }).forEach(inst=>{
                 let g=banks[inst];
+                let isCash=inst==='WALLET'||inst==='現金';
                 let instSafe=escAttr(inst);
                 h+=`<div class="glass rounded-xl overflow-hidden">
                     <div class="px-3 py-2 bg-slate-800/40 border-b border-slate-700/60 flex justify-between items-center gap-2">
                         <div class="flex items-center gap-1.5 min-w-0 flex-1">
-                            <i class="fa-solid fa-landmark text-cyan-400/80 text-[10px] shrink-0"></i>
+                            <i class="fa-solid ${isCash?'fa-money-bill-wave text-emerald-400':'fa-landmark text-cyan-400/80'} text-[10px] shrink-0"></i>
                             <input value="${instSafe}" data-old="${instSafe}" onblur="uBankFromInput(this)" onkeydown="if(event.key==='Enter')this.blur()"
-                                class="fld font-semibold text-white text-xs flex-1 min-w-0 max-w-[160px]" title="點此修改銀行名稱">
+                                class="fld font-semibold text-white text-xs flex-1 min-w-0 max-w-[160px]" title="點此修改${isCash?'現金':'銀行'}名稱">
                         </div>
                         <button type="button" data-bank="${instSafe}" onclick="addAccToBank(this.dataset.bank)" class="text-[9px] text-cyan-400/90 border border-slate-700 px-1.5 py-0.5 rounded shrink-0">＋戶口</button>
                     </div>`;
-                if(g.cash.length){h+=`<p class="px-3 pt-2 pb-0 text-[9px] font-semibold text-emerald-500/80 uppercase tracking-wide"><i class="fa-solid fa-piggy-bank mr-1"></i>存款戶口</p><div>${g.cash.map(({a,i})=>accRow(a,i)).join('')}</div>`}
+                if(g.cash.length){h+=`<p class="px-3 pt-2 pb-0 text-[9px] font-semibold text-emerald-500/80 uppercase tracking-wide"><i class="fa-solid fa-piggy-bank mr-1"></i>${isCash?'現金戶口':'存款戶口'}</p><div>${g.cash.map(({a,i})=>accRow(a,i)).join('')}</div>`}
                 if(g.card.length){h+=`<p class="px-3 pt-2 pb-0 text-[9px] font-semibold text-amber-500/80 uppercase tracking-wide"><i class="fa-solid fa-credit-card mr-1"></i>信用卡</p><div>${g.card.map(({a,i})=>accRow(a,i)).join('')}</div>`}
                 if(g.loan.length){h+=`<p class="px-3 pt-2 pb-0 text-[9px] font-semibold text-rose-500/80 uppercase tracking-wide"><i class="fa-solid fa-house-circle-exclamation mr-1"></i>貸款</p><div>${g.loan.map(({a,i})=>accRow(a,i)).join('')}</div>`}
                 h+=`</div>`;
@@ -494,8 +507,28 @@
             document.getElementById('v-acc-groups').innerHTML=h||'<p class="text-slate-500 text-xs glass p-4 rounded-xl">按「新增帳戶」開始</p>';
         }
 
+        function isWalletAcc(a){return a.type==='CASH'&&(a.inst==='WALLET'||a.inst==='現金'||/現金|wallet/i.test(a.name||''))}
+        function isBankCash(a){return a.type==='CASH'&&!isWalletAcc(a)}
+        function normPg(pg,pm){
+            if(pg==='WALLET'||pg==='BANK'||pg==='CARD')return pg;
+            if(pg==='CASH'){let a=D.acc.find(x=>x.name===pm);return a&&isWalletAcc(a)?'WALLET':'BANK'}
+            return pg;
+        }
+        function accByPg(pg){
+            if(pg==='WALLET')return D.acc.filter(isWalletAcc);
+            if(pg==='BANK')return D.acc.filter(isBankCash);
+            if(pg==='CARD')return D.acc.filter(a=>a.type==='CARD');
+            return D.acc;
+        }
+        function firstAccPg(pg){return accByPg(pg)[0]?.name||''}
+
         function getOpts(selVal,types){
             let arr=D.acc.filter(a=>types.includes(a.type)).map(a=>a.name);
+            if(selVal&&!arr.includes(selVal))arr.unshift(selVal);
+            return arr.map(n=>`<option value="${n}" ${n===selVal?'selected':''}>${n}</option>`).join('');
+        }
+        function getOptsPg(pg,selVal){
+            let arr=accByPg(pg).map(a=>a.name);
             if(selVal&&!arr.includes(selVal))arr.unshift(selVal);
             return arr.map(n=>`<option value="${n}" ${n===selVal?'selected':''}>${n}</option>`).join('');
         }
@@ -504,10 +537,11 @@
             let h='';
             D.exp.sort((a,b)=>new Date(b.date)-new Date(a.date)).forEach(e=>{
                 let idx=D.exp.findIndex(x=>x.id===e.id);
+                let pg=normPg(e.pg,e.pm);
                 let tCl=e.t==='IN'?'text-emerald-400':e.t==='OUT'?'text-rose-400':'text-cyan-400';
                 let pHtm=e.t==='TRANSFER'?
                     `<div class="flex gap-1 items-center"><select onchange="uExp(${idx},'pm',this.value)" class="${sel} flex-1">${getOpts(e.pm,['CASH','CARD','LOAN'])}</select><i class="fa-solid fa-arrow-right text-cyan-500 text-[8px]"></i><select onchange="uExp(${idx},'to',this.value)" class="${sel} flex-1 text-emerald-400">${getOpts(e.to,['CASH','CARD','LOAN'])}</select></div>`:
-                    `<div class="flex gap-1"><select onchange="uExpPg(${idx},this.value)" class="${sel} w-16"><option value="CASH" ${e.pg==='CASH'?'selected':''}>存款</option><option value="CARD" ${e.pg==='CARD'?'selected':''}>信用卡</option></select><select onchange="uExp(${idx},'pm',this.value)" class="${sel} flex-1">${getOpts(e.pm,e.pg==='CARD'?['CARD']:['CASH'])}</select></div>`;
+                    `<div class="flex gap-1"><select onchange="uExpPg(${idx},this.value)" class="${sel} w-[52px]"><option value="WALLET" ${pg==='WALLET'?'selected':''}>現金</option><option value="BANK" ${pg==='BANK'?'selected':''}>銀行</option><option value="CARD" ${pg==='CARD'?'selected':''}>信用卡</option></select><select onchange="uExp(${idx},'pm',this.value)" class="${sel} flex-1">${getOptsPg(pg,e.pm)}</select></div>`;
                 h+=`<tr class="hover:bg-slate-800/40">
                     <td class="p-2"><input type="date" value="${e.date}" onchange="uExp(${idx},'date',this.value)" class="${inp} text-[10px]"></td>
                     <td class="p-2"><select onchange="uExp(${idx},'t',this.value)" class="${sel} ${tCl} font-bold min-w-[72px]"><option value="OUT" ${e.t==='OUT'?'selected':''}>支出</option><option value="IN" ${e.t==='IN'?'selected':''}>收入</option><option value="TRANSFER" ${e.t==='TRANSFER'?'selected':''}>轉帳</option></select></td>
@@ -571,13 +605,16 @@
             el.dataset.old=neu;
         }
         function addAcc(){
-            let inst=prompt('請輸入銀行名稱（例如 HSBC、渣打、工銀）');
-            if(!inst)return;
-            inst=inst.trim();if(!inst)return;
-            let name=prompt('請輸入戶口名稱',inst+' 儲蓄');
+            let kind=prompt('帳戶類型：輸入 1=現金（銀包）  2=銀行存款  3=信用卡  4=貸款','2');
+            if(kind===null)return;
+            let type='CASH',sub='SAVINGS',inst='新銀行',lim=0,day=null,bal=0;
+            if(kind==='1'){inst='WALLET';type='CASH'}
+            else if(kind==='3'){type='CARD';sub='CARD';lim=50000;day=15;bal=0}
+            else if(kind==='4'){type='LOAN';sub='LOAN';bal=0}
+            let name=prompt('戶口名稱',kind==='1'?'隨身現金':kind==='3'?'信用卡':'新戶口');
             if(name===null)return;
-            name=(name||'新戶口').trim()||'新戶口';
-            D.acc.push({id:Date.now(),inst,name,type:'CASH',sub:'SAVINGS',cur:'HKD',bal:0,lim:0,day:null});
+            if(kind==='2'){inst=prompt('銀行名稱','HSBC')||'新銀行';inst=inst.trim()||'新銀行'}
+            D.acc.push({id:Date.now(),inst,name:(name||'新戶口').trim(),type,sub,cur:'HKD',bal,lim,day});
             saveDb();
         }
         function addAccToBank(inst){
@@ -594,17 +631,18 @@
             if(f==='amt')D.exp[i][f]=pNum(v);
             else if(f==='t'){
                 D.exp[i].t=v;
-                if(v==='TRANSFER'){D.exp[i].pg='TRANSFER';D.exp[i].cat='OTHER';D.exp[i].pm=D.acc.find(a=>a.type==='CASH')?.name||'';D.exp[i].to=D.acc.find(a=>a.type==='CARD')?.name||''}
-                else{D.exp[i].pg='CASH';D.exp[i].cat='FOOD';D.exp[i].pm=D.acc.find(a=>a.type==='CASH')?.name||'';D.exp[i].to=''}
+                if(v==='TRANSFER'){D.exp[i].pg='TRANSFER';D.exp[i].cat='OTHER';D.exp[i].pm=firstAccPg('BANK')||firstAccPg('WALLET');D.exp[i].to=D.acc.find(a=>a.type==='CARD')?.name||''}
+                else{D.exp[i].pg='BANK';D.exp[i].cat='FOOD';D.exp[i].pm=firstAccPg('BANK')||firstAccPg('WALLET');D.exp[i].to=''}
             }else D.exp[i][f]=v;
             applyBal(D.exp[i].t,D.exp[i].amt,D.exp[i].pm,D.exp[i].to,false);saveDb();
         }
         function uExpPg(i,g){
             let o=D.exp[i];applyBal(o.t,o.amt,o.pm,o.to,true);
-            D.exp[i].pg=g;D.exp[i].pm=D.acc.find(a=>g==='CARD'?a.type==='CARD':a.type==='CASH')?.name||'';
+            D.exp[i].pg=g;
+            if(!accByPg(g).find(a=>a.name===D.exp[i].pm))D.exp[i].pm=firstAccPg(g);
             applyBal(D.exp[i].t,D.exp[i].amt,D.exp[i].pm,D.exp[i].to,false);saveDb();
         }
-        function addExp(){D.exp.unshift({id:Date.now(),date:new Date().toISOString().split('T')[0],t:'OUT',cat:'FOOD',pg:'CARD',pm:D.acc.find(a=>a.type==='CARD')?.name||D.acc.find(a=>a.type==='CASH')?.name||'',to:'',ds:'',amt:0});saveDb()}
+        function addExp(){D.exp.unshift({id:Date.now(),date:new Date().toISOString().split('T')[0],t:'OUT',cat:'FOOD',pg:'BANK',pm:firstAccPg('BANK')||firstAccPg('WALLET')||firstAccPg('CARD'),to:'',ds:'',amt:0});saveDb()}
         function dExp(i){if(confirm('刪除並還原餘額？')){let o=D.exp[i];applyBal(o.t,o.amt,o.pm,o.to,true);D.exp.splice(i,1);saveDb()}}
         function addStk(){D.stk.push({id:Date.now(),inst:'FUTU',code:'0000',sh:0,cost:0,cur:0});saveDb()}
     </script>
