@@ -20,6 +20,9 @@
         .acc-row{display:flex;align-items:center;gap:6px;padding:7px 12px;border-bottom:1px solid rgba(51,65,85,.35);font-size:11px}
         .acc-row:last-child{border-bottom:none}
         .acc-row:hover{background:rgba(30,41,59,.2)}
+        .acc-bal-col{display:flex;align-items:center;gap:4px;justify-content:flex-end;flex-shrink:0}
+        .acc-hkd-hint{min-width:72px;text-align:right;font-size:9px;color:#64748b;font-family:'JetBrains Mono',monospace;flex-shrink:0}
+        .acc-bal-inp{min-width:112px;width:112px;text-align:right}
         .acc-edit{display:none;padding:6px 12px 8px;background:rgba(2,6,23,.35);border-bottom:1px solid rgba(51,65,85,.25);font-size:10px;gap:6px;flex-wrap:wrap}
         .acc-edit.open{display:flex}
         .badge{display:inline-block;padding:1px 6px;border-radius:4px;font-size:9px;font-weight:600;background:rgba(51,65,85,.5);color:#94a3b8}
@@ -29,7 +32,8 @@
         ::-webkit-scrollbar{width:4px;height:6px}::-webkit-scrollbar-thumb{background:#475569;border-radius:4px}
         .scroll-box{overflow-x:auto;-webkit-overflow-scrolling:touch}
         .metric-bar{transition:width .4s ease}
-        .chart-wrap{position:relative;height:220px}
+        .chart-wrap{position:relative;height:160px}
+        .chart-wrap-tall{position:relative;height:180px}
         .exp-date-hdr td{border-top:1px solid rgba(51,65,85,.5)}
         .zone-label{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#64748b;padding-bottom:6px;border-bottom:1px solid rgba(51,65,85,.45);margin-bottom:12px;display:flex;align-items:center;gap:6px}
         .zone-label i{font-size:9px}
@@ -132,44 +136,45 @@
                         <button type="button" id="exp-all-btn" onclick="toggleExpAll()" class="px-2 py-1 rounded-lg border border-slate-700 text-slate-300 hover:bg-slate-800">查看全部紀錄</button>
                         <span id="exp-count-hint" class="text-slate-500"></span>
                     </div>
-                    <div class="scroll-box max-h-[380px] xl:max-h-[420px] flex-1">
+                    <div class="scroll-box max-h-[380px] xl:max-h-[520px] flex-1">
                         <table class="w-full text-left text-xs whitespace-nowrap">
-                            <thead class="bg-slate-800 sticky top-0 z-10"><tr class="text-slate-400 *:py-2 *:px-2"><th>日期</th><th>類型</th><th>分類</th><th>帳戶/轉帳</th><th>備註</th><th class="text-right">金額</th><th></th></tr></thead>
+                            <thead class="bg-slate-800 sticky top-0 z-10"><tr class="text-slate-400 *:py-2 *:px-2"><th>日期</th><th>類型</th><th>分類</th><th>細項</th><th>帳戶/轉帳</th><th>備註</th><th class="text-right">金額</th><th></th></tr></thead>
                             <tbody id="tb-exp" class="divide-y divide-slate-700/50"></tbody>
                         </table>
                     </div>
                 </section>
 
-                <!-- 分類預算 -->
-                <section class="glass p-4 rounded-2xl flex flex-col min-h-0">
-                    <h2 class="font-bold text-white mb-2 text-sm shrink-0"><i class="fa-solid fa-bullseye text-purple-400 mr-2"></i>分類預算</h2>
-                    <p class="text-[9px] text-slate-500 mb-2 shrink-0">本月各類支出上限（不含轉帳）</p>
-                    <div id="v-budget" class="space-y-2 overflow-y-auto max-h-[380px] xl:max-h-[460px] pr-1"></div>
-                </section>
-            </div>
+                <!-- 右欄：花費分析 + 分類預算 -->
+                <div class="xl:col-span-1 flex flex-col gap-3 min-h-0">
+                    <section class="glass p-4 rounded-2xl shrink-0">
+                        <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-2">
+                            <h2 class="font-bold text-white text-sm"><i class="fa-solid fa-chart-pie text-purple-400 mr-2"></i>花費分析</h2>
+                            <label class="flex items-center gap-1.5 text-[10px] text-slate-400 bg-slate-900/60 border border-slate-700 rounded-lg px-2 py-1">
+                                月份
+                                <input type="month" id="chart-month" onchange="renderCharts()" class="bg-transparent text-white outline-none">
+                            </label>
+                        </div>
+                        <div class="space-y-3">
+                            <div class="bg-slate-900/40 rounded-xl p-2.5 border border-slate-800">
+                                <p class="text-[9px] text-slate-400 mb-1"><i class="fa-solid fa-chart-pie mr-1 text-purple-400"></i>支出分類</p>
+                                <div class="chart-wrap"><canvas id="chart-cat"></canvas></div>
+                                <p id="chart-cat-sum" class="text-[9px] text-slate-500 text-center mt-0.5"></p>
+                            </div>
+                            <div class="bg-slate-900/40 rounded-xl p-2.5 border border-slate-800">
+                                <p class="text-[9px] text-slate-400 mb-1"><i class="fa-solid fa-chart-column mr-1 text-rose-400"></i>近 12 個月</p>
+                                <div class="chart-wrap-tall"><canvas id="chart-monthly"></canvas></div>
+                                <p id="chart-month-avg" class="text-[9px] text-slate-500 text-center mt-0.5"></p>
+                            </div>
+                        </div>
+                    </section>
 
-            <!-- 花費分析 -->
-            <section class="glass p-4 rounded-2xl">
-                <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-3">
-                    <h2 class="font-bold text-white text-sm"><i class="fa-solid fa-chart-pie text-purple-400 mr-2"></i>花費分析</h2>
-                    <label class="flex items-center gap-1.5 text-[10px] text-slate-400 bg-slate-900/60 border border-slate-700 rounded-lg px-2 py-1">
-                        分析月份
-                        <input type="month" id="chart-month" onchange="renderCharts()" class="bg-transparent text-white outline-none">
-                    </label>
+                    <section class="glass p-4 rounded-2xl flex flex-col min-h-0 flex-1">
+                        <h2 class="font-bold text-white mb-2 text-sm shrink-0"><i class="fa-solid fa-bullseye text-purple-400 mr-2"></i>分類預算</h2>
+                        <p class="text-[9px] text-slate-500 mb-2 shrink-0">本月各類支出上限（不含轉帳）</p>
+                        <div id="v-budget" class="space-y-2 overflow-y-auto max-h-[280px] xl:max-h-none flex-1 pr-1"></div>
+                    </section>
                 </div>
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                    <div class="bg-slate-900/40 rounded-xl p-3 border border-slate-800">
-                        <p class="text-[10px] text-slate-400 mb-2"><i class="fa-solid fa-chart-pie mr-1 text-purple-400"></i>當月支出分類</p>
-                        <div class="chart-wrap"><canvas id="chart-cat"></canvas></div>
-                        <p id="chart-cat-sum" class="text-[10px] text-slate-500 text-center mt-1"></p>
-                    </div>
-                    <div class="bg-slate-900/40 rounded-xl p-3 border border-slate-800">
-                        <p class="text-[10px] text-slate-400 mb-2"><i class="fa-solid fa-chart-column mr-1 text-rose-400"></i>近 12 個月支出</p>
-                        <div class="chart-wrap"><canvas id="chart-monthly"></canvas></div>
-                        <p id="chart-month-avg" class="text-[10px] text-slate-500 text-center mt-1"></p>
-                    </div>
-                </div>
-            </section>
+            </div>
         </div>
 
         <!-- 資產管理 -->
@@ -221,6 +226,7 @@
         let D={acc:[],exp:[],stk:[],bg:{FOOD:3000,TRANSPORT:1000,SHOPPING:2000,MORTGAGE:5000,DAILY_BILLS:1500,MISC:1000,OTHER:0},fx:{HKD:1,USD:7.8,JPY:0.052,RMB:1.08,EUR:8.5,GBP:9.8}};
 
         const CM={FOOD:['餐飲','text-emerald-400',true],TRANSPORT:['交通','text-cyan-400',true],SHOPPING:['購物','text-purple-400',true],MORTGAGE:['按揭','text-amber-400',true],DAILY_BILLS:['繳費','text-rose-400',true],MISC:['其他','text-slate-400',true],OTHER:['轉帳','text-slate-500',false]};
+        const CSM={FOOD:['早餐','午餐','晚餐','宵夜','外賣','茶餐廳','聚餐','食材','零食','飲品'],TRANSPORT:['地鐵','巴士','的士','Uber','停車','油費','火車/高鐵','機票'],SHOPPING:['衣服','鞋子','化妝品','護膚品','保健品','日用品','家電','禮物','雜物'],MORTGAGE:['月供','保險','管理費'],DAILY_BILLS:['水電','煤氣','電話','網絡','訂閱','稅費'],MISC:['醫療','進修','娛樂','寵物','美容','其他']};
         const CAT_COLORS={FOOD:'#34d399',TRANSPORT:'#22d3ee',SHOPPING:'#a78bfa',MORTGAGE:'#fbbf24',DAILY_BILLS:'#fb7185',MISC:'#94a3b8',OTHER:'#64748b'};
         const SUB={SAVINGS:'儲蓄戶口',CHECKING:'支票戶口',FOREIGN:'外幣戶口',CARD:'信用卡',LOAN:'貸款'};
         const CURS=['HKD','USD','JPY','RMB','EUR','GBP'];
@@ -254,7 +260,7 @@
                 {id:4,inst:'SCB',name:'渣打儲蓄',type:'CASH',sub:'SAVINGS',cur:'HKD',bal:150000,lim:0,day:null},
                 {id:5,inst:'SCB',name:'渣打日圓',type:'CASH',sub:'FOREIGN',cur:'JPY',bal:200000,lim:0,day:null}
             ],
-            exp:[{id:1,date:new Date().toISOString().split('T')[0],t:'OUT',cat:'FOOD',pg:'CARD',pm:'HSBC 信用卡',to:'',ds:'午餐',amt:120}],
+            exp:[{id:1,date:new Date().toISOString().split('T')[0],t:'OUT',cat:'FOOD',sub:'午餐',pg:'CARD',pm:'HSBC 信用卡',to:'',ds:'',amt:120}],
             stk:[{id:1,inst:'FUTU',code:'0700',sh:100,cost:300,cur:380}],
             bg:{FOOD:3000,TRANSPORT:1000,SHOPPING:2000,MORTGAGE:5000,DAILY_BILLS:1500,MISC:1000,OTHER:0},
             fx:{HKD:1,USD:7.8,JPY:0.052,RMB:1.08,EUR:8.5,GBP:9.8}
@@ -265,7 +271,14 @@
             if(!d.acc)d.acc=[];if(!d.exp)d.exp=[];if(!d.stk)d.stk=[];
             if(!d.bg)d.bg={FOOD:3000,TRANSPORT:1000,SHOPPING:2000,MORTGAGE:5000,DAILY_BILLS:1500,MISC:1000,OTHER:0};
             if(d.bg.MISC===undefined)d.bg.MISC=1000;
-            d.exp.forEach(e=>{if(e.cat==='OTHER'&&e.t!=='TRANSFER')e.cat='MISC'});
+            d.exp.forEach(e=>{
+                if(e.cat==='OTHER'&&e.t!=='TRANSFER')e.cat='MISC';
+                if(e.sub===undefined)e.sub='';
+                if(!e.sub&&e.ds&&e.t!=='TRANSFER'){
+                    let subs=CSM[e.cat]||[];
+                    if(subs.includes(e.ds)){e.sub=e.ds;e.ds=''}
+                }
+            });
             if(!d.fx)d.fx={HKD:1,USD:7.8,JPY:0.052,RMB:1.08,EUR:8.5,GBP:9.8};
             d.acc.forEach(a=>{
                 if(!a.cur)a.cur='HKD';
@@ -458,8 +471,8 @@
             CURS.forEach(c=>{
                 if(!T.curTotals[c])return;
                 let v=T.curTotals[c];
-                let hkd=c!=='HKD'?` <span class="text-slate-600">≈${fNum(toHKD(v,c))}</span>`:'';
-                curH+=`<span class="inline-flex items-center gap-1 bg-slate-900/50 border border-slate-800 rounded px-2 py-1 text-[10px] font-mono"><span class="text-amber-400/90 font-bold">${c}</span><span class="text-white">${fNum(v)}</span>${hkd}</span>`;
+                let hkd=c!=='HKD'?`<span class="text-slate-600">≈${fNum(toHKD(v,c))}</span> `:'';
+                curH+=`<span class="inline-flex items-center gap-1 bg-slate-900/50 border border-slate-800 rounded px-2 py-1 text-[10px] font-mono"><span class="text-amber-400/90 font-bold">${c}</span>${hkd}<span class="text-white">${fNum(v)}</span></span>`;
             });
             document.getElementById('v-cur-breakdown').innerHTML=curH||'<span class="text-[9px] text-slate-600">尚無存款戶口</span>';
             document.getElementById('v-month-spend').innerText=fNum(T.mOut)+' / '+fNum(T.mBud);
@@ -517,7 +530,7 @@
             let w=isWalletAcc(a);
             let balCl=pNum(a.bal)<0?'text-rose-400':'text-emerald-400';
             let subOpts=a.type==='CASH'?['SAVINGS','CHECKING','FOREIGN']:a.type==='CARD'?['CARD']:['LOAN'];
-            let hkdNote=a.cur!=='HKD'?`<span class="text-[9px] text-slate-500 ml-1">≈${fNum(toHKD(a.bal,a.cur))}</span>`:'';
+            let hkdNote=a.cur!=='HKD'?`<span class="acc-hkd-hint" title="折合港幣">≈${fNum(toHKD(a.bal,a.cur))}</span>`:'<span class="acc-hkd-hint"></span>';
             let cardFlds=a.type==='CARD'?`<label class="text-slate-500">額度<input value="${fNum(a.lim)}" onchange="uAcc(${i},'lim',this.value)" class="fld w-14 text-right ml-1">結單日<input value="${a.day||15}" onchange="uAcc(${i},'day',this.value)" class="fld w-8 text-right ml-1"></label>`:'';
             let editFlds=w?
                 `<label class="text-slate-500">名稱<input value="${escAttr(a.name)}" onchange="uAcc(${i},'name',this.value)" class="fld ml-1 w-24"></label>
@@ -533,9 +546,9 @@
                     <span class="text-white text-xs truncate">${escAttr(a.name)}</span>
                     <span class="text-[9px] text-slate-500 shrink-0">${accLabel(a)} · ${a.cur}</span>
                 </div>
-                <div class="shrink-0 flex items-center gap-1">
-                    <input value="${fNum(a.bal)}" onchange="uAcc(${i},'bal',this.value)" class="fld w-[72px] text-right amt ${balCl}" title="餘額">
+                <div class="acc-bal-col">
                     ${hkdNote}
+                    <input value="${fNum(a.bal)}" onchange="uAcc(${i},'bal',this.value)" class="fld acc-bal-inp amt ${balCl}" title="餘額">
                 </div>
                 <button type="button" onclick="toggleAccEdit(${i})" class="text-slate-500 hover:text-cyan-400 shrink-0 px-1" title="編輯帳戶設定"><i class="fa-solid fa-pen-to-square text-[10px]"></i></button>
                 <i class="fa-solid fa-trash text-slate-600 hover:text-rose-500 cursor-pointer text-[10px] shrink-0" onclick="dAcc(${i})"></i>
@@ -611,6 +624,13 @@
         function catOpts(e){
             return Object.keys(CM).filter(k=>e.t==='TRANSFER'?k==='OTHER':k!=='OTHER').map(k=>`<option value="${k}" ${e.cat===k?'selected':''}>${CM[k][0]}</option>`).join('');
         }
+        function subOpts(e){
+            if(e.t==='TRANSFER')return'<option value="">—</option>';
+            let subs=CSM[e.cat]||[], arr=[''];
+            subs.forEach(s=>arr.push(s));
+            if(e.sub&&!arr.includes(e.sub))arr.push(e.sub);
+            return arr.map(s=>`<option value="${s}" ${(e.sub||'')===s?'selected':''}>${s||'—'}</option>`).join('');
+        }
 
         function expRowHtml(e,idx){
             let pg=normPg(e.pg,e.pm);
@@ -622,7 +642,8 @@
                 <td class="p-2"><input type="date" value="${e.date}" onchange="uExp(${idx},'date',this.value)" class="${inp} text-[10px]"></td>
                 <td class="p-2"><select onchange="uExp(${idx},'t',this.value)" class="${sel} ${tCl} font-bold min-w-[72px]"><option value="OUT" ${e.t==='OUT'?'selected':''}>支出</option><option value="IN" ${e.t==='IN'?'selected':''}>收入</option><option value="TRANSFER" ${e.t==='TRANSFER'?'selected':''}>轉帳</option></select></td>
                 <td class="p-2"><select onchange="uExp(${idx},'cat',this.value)" class="${sel}" ${e.t==='TRANSFER'?'disabled':''}>${catOpts(e)}</select></td>
-                <td class="p-2 min-w-[180px]">${pHtm}</td>
+                <td class="p-2"><select onchange="uExp(${idx},'sub',this.value)" class="${sel} min-w-[72px]" ${e.t==='TRANSFER'?'disabled':''} title="細項（可不選）">${subOpts(e)}</select></td>
+                <td class="p-2 min-w-[160px]">${pHtm}</td>
                 <td class="p-2"><input value="${e.ds||''}" onchange="uExp(${idx},'ds',this.value)" class="${inp} min-w-[60px]" placeholder="備註"></td>
                 <td class="p-2 text-right"><input value="${fNum(e.amt)}" onchange="uExp(${idx},'amt',this.value)" class="bg-slate-900 rounded px-2 py-1 text-right w-20 font-bold outline-none text-white"></td>
                 <td class="p-2 text-center"><i class="fa-solid fa-trash text-slate-600 hover:text-rose-500 cursor-pointer" onclick="dExp(${idx})"></i></td>
@@ -661,11 +682,11 @@
                 let idx=D.exp.findIndex(x=>x.id===e.id);
                 if(expShowAll&&e.date!==lastDate){
                     lastDate=e.date;
-                    h+=`<tr class="exp-date-hdr bg-slate-800/70"><td colspan="7" class="p-2 font-semibold text-cyan-300/90 text-[10px] sticky top-8"><i class="fa-regular fa-calendar mr-1"></i>${fmtDateLbl(e.date)} ${dateTag(e.date)}</td></tr>`;
+                    h+=`<tr class="exp-date-hdr bg-slate-800/70"><td colspan="8" class="p-2 font-semibold text-cyan-300/90 text-[10px] sticky top-8"><i class="fa-regular fa-calendar mr-1"></i>${fmtDateLbl(e.date)} ${dateTag(e.date)}</td></tr>`;
                 }
                 h+=expRowHtml(e,idx);
             });
-            document.getElementById('tb-exp').innerHTML=h||`<tr><td colspan="7" class="p-6 text-center text-slate-500 text-[11px]">${expShowAll?'尚無記帳紀錄':'此日尚無紀錄，按「＋ 記一筆」開始'}</td></tr>`;
+            document.getElementById('tb-exp').innerHTML=h||`<tr><td colspan="8" class="p-6 text-center text-slate-500 text-[11px]">${expShowAll?'尚無記帳紀錄':'此日尚無紀錄，按「＋ 記一筆」開始'}</td></tr>`;
             let btn=document.getElementById('exp-all-btn');
             if(btn)btn.textContent=expShowAll?'只看單日':'查看全部紀錄';
             let hint=document.getElementById('exp-count-hint');
@@ -697,7 +718,7 @@
                     labels:catData.map(x=>x.label),
                     datasets:[{data:catData.map(x=>x.val),backgroundColor:catData.map(x=>CAT_COLORS[x.k]||'#64748b'),borderWidth:0}]
                 },options:{responsive:true,maintainAspectRatio:false,plugins:{
-                    legend:{position:'right',labels:{color:th.color,boxWidth:10,padding:8,font:th.font}},
+                    legend:{position:'bottom',labels:{color:th.color,boxWidth:8,padding:6,font:{size:9,family:'Inter'}}},
                     tooltip:{callbacks:{label:ctx=>` ${ctx.label}: HK$ ${fNum(ctx.raw)} (${catSum?Math.round(ctx.raw/catSum*100):0}%)`}}
                 }}});
             }
@@ -804,10 +825,11 @@
             let o=D.exp[i];applyBal(o.t,o.amt,o.pm,o.to,true);
             if(f==='amt')D.exp[i][f]=pNum(v);
             else if(f==='date'){D.exp[i][f]=v;if(!expShowAll){expViewDate=v;let df=document.getElementById('exp-date-filter');if(df)df.value=v}}
+            else if(f==='cat'){D.exp[i][f]=v;if(D.exp[i].sub&&!(CSM[v]||[]).includes(D.exp[i].sub))D.exp[i].sub=''}
             else if(f==='t'){
                 D.exp[i].t=v;
-                if(v==='TRANSFER'){D.exp[i].pg='TRANSFER';D.exp[i].cat='OTHER';D.exp[i].pm=firstAcc(['CASH','CARD','LOAN']);D.exp[i].to=firstAcc(['CARD'])||firstAcc(['CASH','LOAN'])}
-                else{D.exp[i].pg='WALLET';D.exp[i].cat='FOOD';D.exp[i].pm=firstAccPg('WALLET')||firstAccPg('BANK')||firstAccPg('CARD');D.exp[i].to=''}
+                if(v==='TRANSFER'){D.exp[i].pg='TRANSFER';D.exp[i].cat='OTHER';D.exp[i].sub='';D.exp[i].pm=firstAcc(['CASH','CARD','LOAN']);D.exp[i].to=firstAcc(['CARD'])||firstAcc(['CASH','LOAN'])}
+                else{D.exp[i].pg='WALLET';D.exp[i].cat='FOOD';D.exp[i].sub='';D.exp[i].pm=firstAccPg('WALLET')||firstAccPg('BANK')||firstAccPg('CARD');D.exp[i].to=''}
             }else D.exp[i][f]=v;
             applyBal(D.exp[i].t,D.exp[i].amt,D.exp[i].pm,D.exp[i].to,false);saveDb();
         }
@@ -817,7 +839,7 @@
             if(!accByPg(g).find(a=>a.name===D.exp[i].pm))D.exp[i].pm=firstAccPg(g);
             applyBal(D.exp[i].t,D.exp[i].amt,D.exp[i].pm,D.exp[i].to,false);saveDb();
         }
-        function addExp(){D.exp.unshift({id:Date.now(),date:localDateStr(),t:'OUT',cat:'FOOD',pg:'WALLET',pm:firstAccPg('WALLET')||firstAccPg('BANK')||firstAccPg('CARD'),to:'',ds:'',amt:0});if(!expShowAll)expViewDate=localDateStr();saveDb()}
+        function addExp(){D.exp.unshift({id:Date.now(),date:localDateStr(),t:'OUT',cat:'FOOD',sub:'',pg:'WALLET',pm:firstAccPg('WALLET')||firstAccPg('BANK')||firstAccPg('CARD'),to:'',ds:'',amt:0});if(!expShowAll)expViewDate=localDateStr();saveDb()}
         function dExp(i){if(confirm('刪除並還原餘額？')){let o=D.exp[i];applyBal(o.t,o.amt,o.pm,o.to,true);D.exp.splice(i,1);saveDb()}}
         function addStk(){D.stk.push({id:Date.now(),inst:'FUTU',code:'0000',sh:0,cost:0,cur:0});saveDb()}
     </script>
