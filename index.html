@@ -169,7 +169,10 @@
                     </section>
 
                     <section class="glass p-4 rounded-2xl flex flex-col min-h-0 flex-1">
-                        <h2 class="font-bold text-white mb-2 text-sm shrink-0"><i class="fa-solid fa-bullseye text-purple-400 mr-2"></i>分類預算</h2>
+                        <div class="flex justify-between items-center mb-2 shrink-0">
+                            <h2 class="font-bold text-white text-sm"><i class="fa-solid fa-bullseye text-purple-400 mr-2"></i>分類預算</h2>
+                            <button type="button" id="budget-edit-btn" onclick="toggleBudgetEdit()" class="text-[9px] text-purple-400 border border-purple-800/60 px-2 py-0.5 rounded hover:bg-purple-950/40">編輯預算</button>
+                        </div>
                         <p class="text-[9px] text-slate-500 mb-2 shrink-0">本月各類支出上限（不含轉帳）</p>
                         <div id="v-budget" class="space-y-2 overflow-y-auto max-h-[280px] xl:max-h-none flex-1 pr-1"></div>
                     </section>
@@ -222,7 +225,7 @@
         window.onerror=function(msg,src,line){let s=document.getElementById('login-status');if(s)s.textContent='程式錯誤：'+msg;console.error(msg,src,line);return false};
         const VAULT_KEY='cw_vault_v4', BACKUP_DAYS=7;
         let masterPwd='', fails=0, lockTime=0, timer;
-        let expShowAll=false, expViewDate='', chartCatInst=null, chartMonthInst=null;
+        let expShowAll=false, expViewDate='', chartCatInst=null, chartMonthInst=null, budgetEdit=false;
         let D={acc:[],exp:[],stk:[],bg:{FOOD:3000,TRANSPORT:1000,SHOPPING:2000,MORTGAGE:5000,DAILY_BILLS:1500,MISC:1000,OTHER:0},fx:{HKD:1,USD:7.8,JPY:0.052,RMB:1.08,EUR:8.5,GBP:9.8}};
 
         const CM={FOOD:['餐飲','text-emerald-400',true],TRANSPORT:['交通','text-cyan-400',true],SHOPPING:['購物','text-purple-400',true],MORTGAGE:['按揭','text-amber-400',true],DAILY_BILLS:['繳費','text-rose-400',true],MISC:['其他','text-slate-400',true],OTHER:['轉帳','text-slate-500',false]};
@@ -749,18 +752,26 @@
             }
         }
 
+        function toggleBudgetEdit(){
+            budgetEdit=!budgetEdit;
+            renderBudget(calcTotals());
+        }
+
         function renderBudget(T){
             let mStr=new Date().toISOString().slice(0,7),mExp=D.exp.filter(e=>e.date.startsWith(mStr)&&e.t==='OUT'),hB='';
             Object.keys(CM).forEach(k=>{
                 if(!CM[k][2])return;
                 let cB=pNum(D.bg[k]||0),cS=mExp.filter(e=>e.cat===k).reduce((s,e)=>s+pNum(e.amt),0);
                 let pct=cB>0?Math.min(100,cS/cB*100):0;
+                let editFld=budgetEdit?`<div class="mt-1.5 flex justify-end items-center gap-1"><span class="text-[9px] text-slate-500">預算</span><input value="${fNum(cB)}" onchange="D.bg['${k}']=pNum(this.value);saveDb()" class="w-20 bg-slate-950 text-right outline-none text-white rounded px-1.5 py-0.5 border border-slate-700 text-[10px] font-mono" title="預算上限"></div>`:'';
                 hB+=`<div class="bg-slate-900/60 p-2 rounded-lg border border-slate-800 mb-1">
                     <div class="flex justify-between text-xs mb-1"><span class="${CM[k][1]} font-bold">${CM[k][0]}</span><span class="font-mono text-slate-400">${fNum(cS)} / ${fNum(cB)}</span></div>
                     <div class="h-1.5 bg-slate-800 rounded-full overflow-hidden"><div class="metric-bar h-full ${pct>90?'bg-rose-500':pct>70?'bg-amber-500':'bg-emerald-500'}" style="width:${pct}%"></div></div>
-                    <div class="mt-1 text-right"><input value="${fNum(cB)}" onchange="D.bg['${k}']=pNum(this.value);saveDb()" class="w-16 bg-slate-950 text-right outline-none text-white rounded px-1 border border-slate-700 text-[10px]" title="預算"></div>
+                    ${editFld}
                 </div>`;
             });
+            let btn=document.getElementById('budget-edit-btn');
+            if(btn){btn.textContent=budgetEdit?'完成':'編輯預算';btn.classList.toggle('text-emerald-400',budgetEdit);btn.classList.toggle('border-emerald-800/60',budgetEdit);btn.classList.toggle('text-purple-400',!budgetEdit);btn.classList.toggle('border-purple-800/60',!budgetEdit)}
             document.getElementById('v-budget').innerHTML=`<div class="text-xs mb-2 text-slate-300">本月總支出 <span class="font-bold text-rose-300">${fNum(T.mOut)}</span> / 預算 <span class="font-bold text-white">${fNum(T.mBud)}</span></div>${hB}`;
         }
 
