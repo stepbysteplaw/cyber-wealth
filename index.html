@@ -80,7 +80,7 @@
         <!-- 總覽 -->
         <section class="grid grid-cols-1 lg:grid-cols-3 gap-3">
             <div class="lg:col-span-2 glass p-4 md:p-5 rounded-xl">
-                <span class="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">總流動淨資產（不含按揭，折合 HKD）</span>
+                <span class="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">總流動淨資產</span>
                 <div class="amt-lg text-emerald-400 font-mono my-1" id="v-liquid-net">HK$ 0</div>
                 <p class="text-[9px] text-slate-500 mb-3">現金存款 ＋ 股票 － 信用卡待還</p>
                 <div id="v-cur-breakdown" class="flex flex-wrap gap-2 mb-3"></div>
@@ -151,7 +151,14 @@
                     <h2 class="font-bold text-white text-sm"><i class="fa-solid fa-arrow-trend-up text-emerald-400 mr-2"></i>持股</h2>
                     <button onclick="addStk()" class="text-xs text-emerald-400 border border-emerald-700 px-2 py-1 rounded">新增</button>
                 </div>
-                <div class="scroll-box"><table class="w-full text-xs whitespace-nowrap"><tbody id="tb-stk"></tbody></table></div>
+                <div class="scroll-box">
+                    <table class="w-full text-xs whitespace-nowrap">
+                        <thead class="bg-slate-800 sticky top-0"><tr class="text-slate-400 *:py-2 *:px-2">
+                            <th>代號</th><th class="text-center">股數</th><th class="text-center">成本價</th><th class="text-right">現價</th><th></th>
+                        </tr></thead>
+                        <tbody id="tb-stk" class="divide-y divide-slate-700/50"></tbody>
+                    </table>
+                </div>
             </div>
         </section>
     </div>
@@ -532,9 +539,15 @@
         function renderStk(){
             let h='';
             D.stk.forEach((s,i)=>{
-                h+=`<tr><td class="p-2"><input value="${s.code}" onchange="D.stk[${i}].code=this.value;saveDb()" class="${inp} w-16"></td><td class="p-2"><input value="${fNum(s.sh)}" onchange="D.stk[${i}].sh=pNum(this.value);saveDb()" class="w-12 bg-slate-900 rounded p-1 text-center outline-none"></td><td class="p-2"><input value="${fNum(s.cost)}" onchange="D.stk[${i}].cost=pNum(this.value);saveDb()" class="w-12 bg-slate-900 rounded p-1 text-center outline-none"></td><td class="p-2 text-right"><input value="${fNum(s.cur)}" onchange="D.stk[${i}].cur=pNum(this.value);saveDb()" class="w-16 bg-slate-900 rounded p-1 text-right text-emerald-400 font-bold outline-none"></td><td class="p-2 text-center"><i class="fa-solid fa-trash text-slate-600 hover:text-rose-500 cursor-pointer" onclick="D.stk.splice(${i},1);saveDb()"></i></td></tr>`;
+                h+=`<tr class="hover:bg-slate-800/40">
+                    <td class="p-2"><input value="${s.code||''}" placeholder="0700" onchange="D.stk[${i}].code=this.value;saveDb()" class="${inp} w-16"></td>
+                    <td class="p-2 text-center"><input value="${fNum(s.sh)}" placeholder="100" onchange="D.stk[${i}].sh=pNum(this.value);saveDb()" class="w-14 bg-slate-900 rounded p-1 text-center outline-none"></td>
+                    <td class="p-2 text-center"><input value="${fNum(s.cost)}" placeholder="300" onchange="D.stk[${i}].cost=pNum(this.value);saveDb()" class="w-14 bg-slate-900 rounded p-1 text-center outline-none"></td>
+                    <td class="p-2 text-right"><input value="${fNum(s.cur)}" placeholder="380" onchange="D.stk[${i}].cur=pNum(this.value);saveDb()" class="w-16 bg-slate-900 rounded p-1 text-right text-emerald-400 font-bold outline-none"></td>
+                    <td class="p-2 text-center"><i class="fa-solid fa-trash text-slate-600 hover:text-rose-500 cursor-pointer" onclick="D.stk.splice(${i},1);saveDb()"></i></td>
+                </tr>`;
             });
-            document.getElementById('tb-stk').innerHTML=h;
+            document.getElementById('tb-stk').innerHTML=h||'<tr><td colspan="5" class="p-3 text-center text-slate-500 text-[10px]">按「新增」加入持股</td></tr>';
         }
 
         function uAcc(i,f,v){
